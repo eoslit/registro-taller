@@ -1,0 +1,1873 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#1a1209" />
+  <meta name="description" content="Registro de piezas de joyería – uso personal offline" />
+  <title>Joyería · Taller</title>
+
+  <!-- Import map: permite usar pdf-lib como ES module desde CDN sin bundler -->
+  <script type="importmap">
+  {
+    "imports": {
+      "pdf-lib": "https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.esm.min.js"
+    }
+  }
+  </script>
+
+  <!-- PWA Manifest inline via data URI -->
+  <link rel="manifest" href="data:application/manifest+json,{
+    %22name%22:%22Joyeria Taller%22,
+    %22short_name%22:%22Joyeria%22,
+    %22start_url%22:%22.%22,
+    %22display%22:%22standalone%22,
+    %22background_color%22:%22%231a1209%22,
+    %22theme_color%22:%22%231a1209%22
+  }" />
+
+  <style>
+    /* ─── TOKENS ──────────────────────────────────────────── */
+    :root {
+      --gold:    #c9a84c;
+      --gold-lt: #e8c97a;
+      --gold-dk: #8a6b22;
+      --ink:     #1a1209;
+      --ink-2:   #2d2010;
+      --ink-3:   #3f3020;
+      --parch:   #f5efd8;
+      --parch-2: #ede4c8;
+      --text:    #f0e8d0;
+      --text-2:  #c8bfa0;
+      --red:     #c0392b;
+      --r: .75rem;
+      --shadow: 0 4px 24px rgba(0,0,0,.5);
+    }
+
+    /* ─── RESET ───────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { height: 100%; }
+    body {
+      height: 100%;
+      font-family: 'Georgia', 'Times New Roman', serif;
+      background: var(--ink);
+      color: var(--text);
+      overflow-x: hidden;
+    }
+
+    /* ─── TOPBAR ──────────────────────────────────────────── */
+    header {
+      position: sticky; top: 0; z-index: 100;
+      background: linear-gradient(180deg, var(--ink) 0%, var(--ink-2) 100%);
+      border-bottom: 1px solid var(--gold-dk);
+      padding: .9rem 1.2rem;
+      display: flex; align-items: center; gap: .8rem;
+    }
+    header h1 {
+      font-size: 1.15rem;
+      font-weight: normal;
+      letter-spacing: .12em;
+      color: var(--gold);
+      text-transform: uppercase;
+      flex: 1;
+    }
+    header h1 span { color: var(--text-2); font-size: .7em; display: block; letter-spacing: .08em; }
+
+    /* ─── BOTTOM NAV ──────────────────────────────────────── */
+    nav.bottom {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+      background: var(--ink-2);
+      border-top: 1px solid var(--gold-dk);
+      display: flex;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    nav.bottom button {
+      flex: 1; background: none; border: none; color: var(--text-2);
+      padding: .7rem .5rem .5rem;
+      font-size: .65rem; letter-spacing: .07em; text-transform: uppercase;
+      cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: .25rem;
+      transition: color .2s;
+    }
+    nav.bottom button svg { width: 22px; height: 22px; }
+    nav.bottom button.active,
+    nav.bottom button:hover { color: var(--gold); }
+
+    /* ─── VIEWS ───────────────────────────────────────────── */
+    main { padding: 1rem 1rem 5rem; max-width: 640px; margin: 0 auto; }
+    .view { display: none; animation: fadeUp .3s ease; }
+    .view.active { display: block; }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ─── PIECES LIST ─────────────────────────────────────── */
+    .pieces-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    .piece-card {
+      background: var(--ink-2);
+      border: 1px solid var(--ink-3);
+      border-radius: var(--r);
+      overflow: hidden;
+      cursor: pointer;
+      transition: border-color .2s, transform .15s;
+    }
+    .piece-card:hover { border-color: var(--gold-dk); transform: translateY(-2px); }
+    .piece-card .thumb {
+      width: 100%; aspect-ratio: 1;
+      background: var(--ink-3);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2rem; color: var(--gold-dk);
+      overflow: hidden;
+    }
+    .piece-card .thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .piece-card .info { padding: .6rem .7rem; }
+    .piece-card .info h3 { font-size: .85rem; font-weight: normal; color: var(--gold-lt); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .piece-card .info p { font-size: .7rem; color: var(--text-2); margin-top: .15rem; }
+
+    .empty-state {
+      text-align: center; padding: 3rem 1rem;
+      color: var(--text-2); font-size: .9rem;
+    }
+    .empty-state svg { width: 56px; margin-bottom: 1rem; opacity: .3; }
+
+    /* ─── FORM ────────────────────────────────────────────── */
+    .form-card {
+      background: var(--ink-2);
+      border: 1px solid var(--ink-3);
+      border-radius: var(--r);
+      padding: 1.2rem;
+      margin-top: .5rem;
+    }
+    .field { margin-bottom: 1rem; }
+    .field label {
+      display: block; font-size: .72rem; letter-spacing: .08em;
+      text-transform: uppercase; color: var(--gold); margin-bottom: .35rem;
+    }
+    .field input,
+    .field select,
+    .field textarea {
+      width: 100%; background: var(--ink-3);
+      border: 1px solid #4a3820; border-radius: .4rem;
+      color: var(--text); padding: .55rem .75rem;
+      font-family: inherit; font-size: .9rem;
+      outline: none; transition: border-color .2s;
+    }
+    .field input:focus,
+    .field select:focus,
+    .field textarea:focus { border-color: var(--gold-dk); }
+    .field textarea { resize: vertical; min-height: 80px; }
+    .field select option { background: var(--ink-2); }
+
+    /* ─── PHOTO UPLOAD ────────────────────────────────────── */
+    .photo-drop {
+      border: 2px dashed var(--gold-dk);
+      border-radius: var(--r);
+      padding: 1.5rem;
+      text-align: center;
+      cursor: pointer;
+      color: var(--text-2);
+      font-size: .85rem;
+      transition: border-color .2s, background .2s;
+    }
+    .photo-drop:hover, .photo-drop.over {
+      border-color: var(--gold); background: rgba(201,168,76,.06);
+    }
+    .photo-drop svg { width: 32px; margin-bottom: .5rem; color: var(--gold-dk); }
+    #photo-input { display: none; }
+
+    .photo-previews {
+      display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .75rem;
+    }
+    .photo-preview {
+      position: relative; width: 72px; height: 72px;
+      border-radius: .4rem; overflow: hidden;
+      border: 1px solid var(--ink-3);
+    }
+    .photo-preview img { width: 100%; height: 100%; object-fit: cover; }
+    .photo-preview button {
+      position: absolute; top: 2px; right: 2px;
+      background: rgba(0,0,0,.7); border: none; border-radius: 50%;
+      width: 18px; height: 18px; cursor: pointer;
+      color: #fff; font-size: 11px; line-height: 1;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    /* ─── BUTTONS ─────────────────────────────────────────── */
+    .btn {
+      display: inline-flex; align-items: center; gap: .4rem;
+      padding: .6rem 1.2rem; border-radius: .4rem;
+      border: none; cursor: pointer; font-family: inherit;
+      font-size: .85rem; letter-spacing: .05em;
+      transition: opacity .2s, transform .1s;
+    }
+    .btn:active { transform: scale(.97); }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--gold-dk), var(--gold));
+      color: var(--ink);
+    }
+    .btn-danger { background: var(--red); color: #fff; }
+    .btn-ghost { background: var(--ink-3); color: var(--text-2); }
+    .btn-sm { padding: .4rem .8rem; font-size: .78rem; }
+    .btn-block { width: 100%; justify-content: center; }
+
+    /* ─── DETAIL VIEW ─────────────────────────────────────── */
+    .detail-header { margin-bottom: 1rem; }
+    .detail-header .back-btn {
+      background: none; border: none; color: var(--gold);
+      font-family: inherit; font-size: .85rem; cursor: pointer;
+      display: flex; align-items: center; gap: .3rem; padding: 0;
+      margin-bottom: .75rem;
+    }
+    .detail-header h2 { font-size: 1.3rem; font-weight: normal; color: var(--gold-lt); }
+    .detail-meta { font-size: .78rem; color: var(--text-2); margin-top: .25rem; }
+
+    .detail-notes {
+      background: var(--ink-2); border: 1px solid var(--ink-3);
+      border-radius: var(--r); padding: .9rem; margin: 1rem 0;
+      font-size: .88rem; color: var(--text); line-height: 1.6;
+      white-space: pre-wrap;
+    }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: .6rem; margin-top: .75rem;
+    }
+    .gallery-item {
+      aspect-ratio: 1; border-radius: .4rem; overflow: hidden;
+      cursor: pointer; border: 1px solid var(--ink-3);
+      transition: transform .15s;
+    }
+    .gallery-item:hover { transform: scale(1.02); }
+    .gallery-item img { width: 100%; height: 100%; object-fit: cover; }
+
+    /* ─── LIGHTBOX ────────────────────────────────────────── */
+    #lightbox {
+      display: none; position: fixed; inset: 0; z-index: 200;
+      background: rgba(0,0,0,.92);
+      align-items: center; justify-content: center;
+    }
+    #lightbox.open { display: flex; }
+    #lightbox img {
+      max-width: 95vw; max-height: 90vh;
+      border-radius: .5rem; object-fit: contain;
+      box-shadow: var(--shadow);
+    }
+    #lightbox .close-lb {
+      position: absolute; top: 1rem; right: 1rem;
+      background: var(--ink-2); border: 1px solid var(--gold-dk);
+      color: var(--gold); font-size: 1.2rem; width: 36px; height: 36px;
+      border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    }
+
+    /* ─── SECTION TITLE ───────────────────────────────────── */
+    .section-title {
+      font-size: .72rem; text-transform: uppercase; letter-spacing: .1em;
+      color: var(--gold); border-bottom: 1px solid var(--ink-3);
+      padding-bottom: .4rem; margin-bottom: .75rem;
+    }
+
+    /* ─── TOAST ───────────────────────────────────────────── */
+    #toast {
+      position: fixed; bottom: 5rem; left: 50%; transform: translateX(-50%) translateY(20px);
+      background: var(--ink-2); border: 1px solid var(--gold-dk);
+      color: var(--gold-lt); padding: .6rem 1.2rem;
+      border-radius: 2rem; font-size: .82rem;
+      opacity: 0; transition: opacity .3s, transform .3s;
+      pointer-events: none; z-index: 300; white-space: nowrap;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ─── SEARCH ──────────────────────────────────────────── */
+    .search-bar {
+      display: flex; gap: .5rem; margin-top: .75rem;
+    }
+    .search-bar input {
+      flex: 1; background: var(--ink-2); border: 1px solid var(--ink-3);
+      border-radius: .4rem; color: var(--text); padding: .5rem .8rem;
+      font-family: inherit; font-size: .88rem; outline: none;
+    }
+    .search-bar input:focus { border-color: var(--gold-dk); }
+
+    .btn-pdf {
+      background: linear-gradient(135deg, #1a3a2a, #2d6e4e);
+      color: #a8e6c8;
+      border: 1px solid #2d6e4e;
+    }
+    .btn-pdf:disabled {
+      opacity: .6; cursor: not-allowed;
+    }
+    .btn-pdf.loading svg { animation: spin .8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .badge {
+      display: inline-block; background: var(--ink-3);
+      color: var(--text-2); font-size: .65rem;
+      padding: .1rem .5rem; border-radius: 1rem;
+      letter-spacing: .05em; vertical-align: middle; margin-left: .3rem;
+    }
+
+    /* ─── CAMPOS EN FILA (peso antes / después) ───────────── */
+    .field-row {
+      display: grid; grid-template-columns: 1fr 1fr; gap: .6rem;
+    }
+
+    /* ─── CHIPS DE PRUEBA DE LEY ──────────────────────────── */
+    .ley-chips {
+      display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .35rem;
+    }
+    .ley-chip { position: relative; }
+    .ley-chip input[type="checkbox"] {
+      position: absolute; opacity: 0; width: 0; height: 0;
+    }
+    .ley-chip label {
+      display: inline-flex; align-items: center;
+      background: var(--ink-3); border: 1px solid #4a3820;
+      border-radius: 2rem; padding: .3rem .8rem;
+      font-size: .78rem; color: var(--text-2);
+      cursor: pointer; transition: all .15s;
+      text-transform: none; margin: 0; letter-spacing: .03em;
+    }
+    .ley-chip input:checked + label {
+      background: rgba(201,168,76,.18);
+      border-color: var(--gold);
+      color: var(--gold-lt);
+    }
+
+    /* ─── DETALLE: ID monospace ───────────────────────────── */
+    .detail-id {
+      display: inline-block; font-family: monospace;
+      background: var(--ink-3); color: var(--gold);
+      font-size: .78rem; padding: .15rem .5rem;
+      border-radius: .3rem; letter-spacing: .08em;
+      margin-top: .4rem;
+    }
+
+    /* ─── DETALLE: Tabla datos técnicos ───────────────────── */
+    .data-grid {
+      display: grid; grid-template-columns: auto 1fr;
+      gap: .4rem .9rem; margin: .5rem 0 1rem;
+      background: var(--ink-2); border: 1px solid var(--ink-3);
+      border-radius: var(--r); padding: .8rem 1rem;
+    }
+    .data-grid dt {
+      font-size: .7rem; text-transform: uppercase;
+      letter-spacing: .08em; color: var(--text-2);
+      align-self: center; white-space: nowrap;
+    }
+    .data-grid dd { font-size: .9rem; color: var(--text); }
+    .data-grid dd.hl { color: var(--gold-lt); }
+
+    /* ─── CHIPS de ley en detalle ─────────────────────────── */
+    .ley-tags { display: flex; flex-wrap: wrap; gap: .3rem; margin-top: .5rem; }
+    .ley-tag {
+      background: rgba(201,168,76,.15); border: 1px solid var(--gold-dk);
+      color: var(--gold-lt); font-size: .75rem;
+      padding: .2rem .65rem; border-radius: 2rem;
+    }
+    /* ─── VISTA AJUSTES ───────────────────────────────────── */
+    .settings-card {
+      background: var(--ink-2); border: 1px solid var(--ink-3);
+      border-radius: var(--r); overflow: hidden; margin-bottom: 1rem;
+    }
+    .settings-card h3 {
+      font-size: .72rem; text-transform: uppercase; letter-spacing: .1em;
+      color: var(--gold); padding: .7rem 1rem;
+      border-bottom: 1px solid var(--ink-3); font-weight: normal;
+    }
+    .settings-row {
+      display: flex; align-items: center; gap: .8rem;
+      padding: .9rem 1rem; border-bottom: 1px solid var(--ink-3);
+    }
+    .settings-row:last-child { border-bottom: none; }
+    .settings-row .icon {
+      width: 36px; height: 36px; border-radius: .4rem;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .settings-row .icon.green  { background: rgba(46,160,87,.15); color: #3fb950; }
+    .settings-row .icon.blue   { background: rgba(56,139,253,.15); color: #58a6ff; }
+    .settings-row .icon.orange { background: rgba(210,153,34,.15); color: #d29922; }
+    .settings-row .icon.red    { background: rgba(192,57,43,.15);  color: #f85149; }
+    .settings-row .text { flex: 1; }
+    .settings-row .text strong { display: block; font-size: .88rem; color: var(--text); font-weight: normal; }
+    .settings-row .text small  { font-size: .73rem; color: var(--text-2); }
+    .settings-row .btn { flex-shrink: 0; }
+
+    /* ─── MODAL CONFIRMACIÓN ──────────────────────────────── */
+    #modal-overlay {
+      display: none; position: fixed; inset: 0; z-index: 400;
+      background: rgba(0,0,0,.75); align-items: center; justify-content: center;
+      padding: 1.5rem;
+    }
+    #modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--ink-2); border: 1px solid var(--gold-dk);
+      border-radius: var(--r); padding: 1.4rem; width: 100%; max-width: 340px;
+      box-shadow: var(--shadow);
+    }
+    .modal h3 { color: var(--gold-lt); font-size: 1rem; font-weight: normal; margin-bottom: .6rem; }
+    .modal p  { color: var(--text-2); font-size: .85rem; line-height: 1.5; margin-bottom: 1.1rem; }
+    .modal .modal-actions { display: flex; gap: .6rem; justify-content: flex-end; }
+
+    /* Barra de progreso de importación */
+    .progress-bar {
+      width: 100%; height: 4px; background: var(--ink-3);
+      border-radius: 2px; overflow: hidden; margin-top: .8rem; display: none;
+    }
+    .progress-bar .fill {
+      height: 100%; background: var(--gold);
+      width: 0%; transition: width .2s;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ─── HEADER ──────────────────────────────────────────────── -->
+<header>
+  <h1>Joyería · Taller <span>Registro de Piezas</span></h1>
+</header>
+
+<!-- ─── MAIN CONTENT ────────────────────────────────────────── -->
+<main>
+
+  <!-- LIST VIEW -->
+  <section id="view-list" class="view active">
+    <div class="search-bar">
+      <input type="search" id="search-input" placeholder="Buscar pieza…" autocomplete="off" />
+    </div>
+    <div class="pieces-grid" id="pieces-grid"></div>
+  </section>
+
+  <!-- NEW PIECE FORM VIEW -->
+  <section id="view-form" class="view">
+    <p class="section-title">Nueva Pieza</p>
+    <div class="form-card">
+
+      <!-- Identificación -->
+      <div class="field-row">
+        <div class="field">
+          <label for="f-ref">Referencia / ID *</label>
+          <input type="text" id="f-ref" placeholder="Ej: A-2025-001" maxlength="40" />
+        </div>
+        <div class="field">
+          <label for="f-date">Fecha</label>
+          <input type="date" id="f-date" />
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="f-name">Nombre de la pieza *</label>
+        <input type="text" id="f-name" placeholder="Ej: Anillo solitario…" maxlength="80" />
+      </div>
+
+      <div class="field">
+        <label for="f-type">Tipo</label>
+        <select id="f-type">
+          <option value="anillo">Anillo</option>
+          <option value="collar">Collar / Cadena</option>
+          <option value="pulsera">Pulsera</option>
+          <option value="pendiente">Pendiente / Arete</option>
+          <option value="broche">Broche</option>
+          <option value="otro">Otro</option>
+        </select>
+      </div>
+
+      <!-- Peso -->
+      <p class="section-title" style="margin-top:.2rem">Peso</p>
+      <div class="field-row">
+        <div class="field">
+          <label for="f-weight-before">Antes de reparación (g)</label>
+          <input type="number" id="f-weight-before" placeholder="0.00" step="0.01" min="0" />
+        </div>
+        <div class="field">
+          <label for="f-weight-after">Después de reparación (g)</label>
+          <input type="number" id="f-weight-after" placeholder="0.00" step="0.01" min="0" />
+        </div>
+      </div>
+
+      <!-- Pruebas de ley -->
+      <p class="section-title">Prueba de Ley</p>
+      <div class="ley-chips" role="group" aria-label="Selecciona pruebas de ley">
+        <!-- Oro -->
+        <div class="ley-chip"><input type="checkbox" id="ley-750" value="750"><label for="ley-750">Au 750 (18k)</label></div>
+        <div class="ley-chip"><input type="checkbox" id="ley-585" value="585"><label for="ley-585">Au 585 (14k)</label></div>
+        <div class="ley-chip"><input type="checkbox" id="ley-375" value="375"><label for="ley-375">Au 375 (9k)</label></div>
+        <!-- Plata -->
+        <div class="ley-chip"><input type="checkbox" id="ley-999" value="999"><label for="ley-999">Ag 999</label></div>
+        <div class="ley-chip"><input type="checkbox" id="ley-925" value="925"><label for="ley-925">Ag 925</label></div>
+        <div class="ley-chip"><input type="checkbox" id="ley-800" value="800"><label for="ley-800">Ag 800</label></div>
+        <!-- Platino -->
+        <div class="ley-chip"><input type="checkbox" id="ley-pt950" value="Pt950"><label for="ley-pt950">Pt 950</label></div>
+        <div class="ley-chip"><input type="checkbox" id="ley-pt900" value="Pt900"><label for="ley-pt900">Pt 900</label></div>
+        <!-- Sin contrastar -->
+        <div class="ley-chip"><input type="checkbox" id="ley-sc" value="Sin contrastar"><label for="ley-sc">Sin contrastar</label></div>
+      </div>
+      <div class="field" style="margin-top:.6rem">
+        <label for="f-ley-custom">Otra ley / resultado personalizado</label>
+        <input type="text" id="f-ley-custom" placeholder="Ej: Chapado, Doublé, Cu…" maxlength="80" />
+      </div>
+
+      <!-- Notas -->
+      <p class="section-title">Notas</p>
+      <div class="field">
+        <textarea id="f-notes" placeholder="Material, técnica, cliente, observaciones…"></textarea>
+      </div>
+
+      <p class="section-title">Fotos</p>
+      <div class="photo-drop" id="photo-drop">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="3" y="3" width="18" height="18" rx="2"/>
+          <circle cx="8.5" cy="8.5" r="1.5"/>
+          <polyline points="21 15 16 10 5 21"/>
+        </svg>
+        <div>Toca para añadir fotos</div>
+        <small>JPG · PNG · WEBP</small>
+      </div>
+      <input type="file" id="photo-input" accept="image/*" multiple />
+      <div class="photo-previews" id="photo-previews"></div>
+
+      <div style="display:flex;gap:.6rem;margin-top:1.2rem">
+        <button class="btn btn-ghost" id="btn-cancel">Cancelar</button>
+        <button class="btn btn-primary btn-block" id="btn-save">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          Guardar pieza
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- DETAIL VIEW -->
+  <section id="view-detail" class="view">
+    <div class="detail-header">
+      <button class="back-btn" id="btn-back">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+        Volver
+      </button>
+      <h2 id="d-name"></h2>
+      <p class="detail-meta" id="d-meta"></p>
+      <code class="detail-id" id="d-ref"></code>
+    </div>
+
+    <p class="section-title">Datos técnicos</p>
+    <dl class="data-grid" id="d-data-grid">
+      <!-- rellenado por JS -->
+    </dl>
+
+    <p class="section-title">Prueba de Ley</p>
+    <div class="ley-tags" id="d-ley-tags">—</div>
+
+    <p class="section-title" style="margin-top:1rem">Notas</p>
+    <div class="detail-notes" id="d-notes">—</div>
+
+    <p class="section-title">Galería <span class="badge" id="d-photo-count">0</span></p>
+    <div class="gallery" id="d-gallery"></div>
+
+    <div style="display:flex;gap:.6rem;margin-top:1.5rem;flex-wrap:wrap">
+      <button class="btn btn-danger btn-sm" id="btn-delete">Eliminar pieza</button>
+      <button class="btn btn-pdf btn-sm" id="btn-pdf">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="12" y1="18" x2="12" y2="12"/>
+          <line x1="9" y1="15" x2="15" y2="15"/>
+        </svg>
+        Exportar PDF
+      </button>
+    </div>
+  </section>
+
+  <!-- SETTINGS / BACKUP VIEW -->
+  <section id="view-settings" class="view">
+    <p class="section-title">Datos y Backup</p>
+
+    <div class="settings-card">
+      <h3>Exportar</h3>
+
+      <div class="settings-row">
+        <div class="icon green">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+        </div>
+        <div class="text">
+          <strong>Backup completo (.json)</strong>
+          <small>Exporta todas las piezas y fotos. Guárdalo en iCloud o Google Drive.</small>
+        </div>
+        <button class="btn btn-ghost btn-sm" id="btn-export-json">Exportar</button>
+      </div>
+
+      <div class="settings-row">
+        <div class="icon blue">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+          </svg>
+        </div>
+        <div class="text">
+          <strong>Exportar solo fichas (.json)</strong>
+          <small>Sin fotos. Archivo más ligero para revisión rápida.</small>
+        </div>
+        <button class="btn btn-ghost btn-sm" id="btn-export-meta">Exportar</button>
+      </div>
+    </div>
+
+    <div class="settings-card">
+      <h3>Importar</h3>
+      <div class="settings-row">
+        <div class="icon orange">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+        </div>
+        <div class="text">
+          <strong>Restaurar backup (.json)</strong>
+          <small>Importa un backup exportado previamente desde esta app.</small>
+        </div>
+        <button class="btn btn-ghost btn-sm" id="btn-import-trigger">Importar</button>
+      </div>
+      <input type="file" id="import-input" accept=".json,application/json" style="display:none" />
+    </div>
+
+    <div class="settings-card">
+      <h3>Peligro</h3>
+      <div class="settings-row">
+        <div class="icon red">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6"/>
+            <path d="M19 6l-1 14H6L5 6"/>
+            <path d="M10 11v6M14 11v6"/>
+            <path d="M9 6V4h6v2"/>
+          </svg>
+        </div>
+        <div class="text">
+          <strong>Borrar todos los datos</strong>
+          <small>Elimina todas las piezas y fotos permanentemente.</small>
+        </div>
+        <button class="btn btn-danger btn-sm" id="btn-clear-all">Borrar</button>
+      </div>
+    </div>
+
+    <!-- Info -->
+    <div style="text-align:center;padding:1rem;color:var(--text-2);font-size:.75rem;line-height:1.6">
+      Los datos se guardan localmente en este dispositivo.<br>
+      Haz backup regularmente para no perder tu trabajo.
+    </div>
+  </section>
+
+</main>
+
+<!-- ─── MODAL CONFIRMACIÓN ───────────────────────────────────── -->
+<div id="modal-overlay">
+  <div class="modal">
+    <h3 id="modal-title">¿Confirmar acción?</h3>
+    <p id="modal-desc"></p>
+    <div class="progress-bar" id="modal-progress">
+      <div class="fill" id="modal-progress-fill"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost btn-sm" id="modal-cancel">Cancelar</button>
+      <button class="btn btn-danger btn-sm" id="modal-confirm">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── BOTTOM NAV ───────────────────────────────────────────── -->
+<nav class="bottom">
+  <button id="nav-list" class="active" onclick="App.showView('list')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+      <rect x="3" y="3" width="7" height="7" rx="1"/>
+      <rect x="14" y="3" width="7" height="7" rx="1"/>
+      <rect x="3" y="14" width="7" height="7" rx="1"/>
+      <rect x="14" y="14" width="7" height="7" rx="1"/>
+    </svg>
+    Piezas
+  </button>
+  <button id="nav-form" onclick="App.showView('form')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+      <circle cx="12" cy="12" r="9"/>
+      <line x1="12" y1="8" x2="12" y2="16"/>
+      <line x1="8" y1="12" x2="16" y2="12"/>
+    </svg>
+    Nueva
+  </button>
+  <button id="nav-settings" onclick="App.showView('settings')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+      <circle cx="12" cy="12" r="3"/>
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+    </svg>
+    Ajustes
+  </button>
+</nav>
+
+<!-- ─── LIGHTBOX ─────────────────────────────────────────────── -->
+<div id="lightbox">
+  <button class="close-lb" id="close-lb">✕</button>
+  <img id="lightbox-img" src="" alt="Foto ampliada" />
+</div>
+
+<!-- ─── TOAST ─────────────────────────────────────────────────── -->
+<div id="toast"></div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     JAVASCRIPT  (ES modules inlined como type=module)
+════════════════════════════════════════════════════════════════ -->
+<script type="module">
+
+/* ─────────────────────────────────────────────────────────────
+   Importamos pdf-lib para generación de PDF en el cliente
+   (sin backend, funciona 100% offline tras la primera carga)
+───────────────────────────────────────────────────────────── */
+import { PDFDocument, rgb, StandardFonts, PageSizes } from 'pdf-lib';
+
+/* ─────────────────────────────────────────────────────────────
+   db.js  — Módulo IndexedDB
+   Expone: openDB(), getPieces(), getPiece(), savePiece(),
+           deletePiece(), getPhotos(), savePhoto(), deletePhoto()
+───────────────────────────────────────────────────────────── */
+const DB_NAME    = 'joyeria-db';
+const DB_VERSION = 2; // ← bumpeado al añadir campos nuevos
+
+/** Abre (o crea) la base de datos IndexedDB */
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+
+    /* Migración / creación de esquema */
+    req.onupgradeneeded = (e) => {
+      const db = e.target.result;
+
+      if (!db.objectStoreNames.contains('pieces')) {
+        const ps = db.createObjectStore('pieces', { keyPath: 'id' });
+        ps.createIndex('createdAt', 'createdAt');
+        ps.createIndex('type', 'type');
+        ps.createIndex('ref', 'ref'); // índice por referencia personalizada
+      }
+
+      if (!db.objectStoreNames.contains('photos')) {
+        const ph = db.createObjectStore('photos', { keyPath: 'id' });
+        ph.createIndex('pieceId', 'pieceId');
+        ph.createIndex('order',   'order');
+      }
+      // v2: los campos nuevos (ref, weightBefore, weightAfter, ley)
+      // son planos en el objeto piece, no requieren índice extra.
+      // Las piezas antiguas simplemente tendrán esos campos como undefined.
+    };
+
+    req.onsuccess = () => resolve(req.result);
+    req.onerror   = () => reject(req.error);
+  });
+}
+
+/** Genera un UUID v4 simple (sin dependencias) */
+function uuid() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random() * 16 | 0;
+    return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+  });
+}
+
+/* --- PIECES CRUD ------------------------------------------- */
+
+function getPieces(db) {
+  return new Promise((resolve, reject) => {
+    const tx    = db.transaction('pieces', 'readonly');
+    const store = tx.objectStore('pieces');
+    const req   = store.index('createdAt').getAll();
+    req.onsuccess = () => resolve(req.result.reverse()); // más recientes primero
+    req.onerror   = () => reject(req.error);
+  });
+}
+
+function getPiece(db, id) {
+  return new Promise((resolve, reject) => {
+    const tx    = db.transaction('pieces', 'readonly');
+    const store = tx.objectStore('pieces');
+    const req   = store.get(id);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror   = () => reject(req.error);
+  });
+}
+
+function savePiece(db, piece) {
+  return new Promise((resolve, reject) => {
+    const tx    = db.transaction('pieces', 'readwrite');
+    const store = tx.objectStore('pieces');
+    // Si no tiene id, es nueva
+    if (!piece.id) {
+      piece.id        = uuid();
+      piece.createdAt = Date.now();
+    }
+    piece.updatedAt = Date.now();
+    const req = store.put(piece);
+    req.onsuccess = () => resolve(piece);
+    req.onerror   = () => reject(req.error);
+  });
+}
+
+function deletePiece(db, id) {
+  return new Promise((resolve, reject) => {
+    const tx    = db.transaction('pieces', 'readwrite');
+    const store = tx.objectStore('pieces');
+    const req   = store.delete(id);
+    req.onsuccess = () => resolve();
+    req.onerror   = () => reject(req.error);
+  });
+}
+
+/* --- PHOTOS CRUD ------------------------------------------- */
+
+function getPhotos(db, pieceId) {
+  return new Promise((resolve, reject) => {
+    const tx    = db.transaction('photos', 'readonly');
+    const store = tx.objectStore('photos');
+    const idx   = store.index('pieceId');
+    const req   = idx.getAll(pieceId);
+    req.onsuccess = () => resolve(req.result.sort((a, b) => a.order - b.order));
+    req.onerror   = () => reject(req.error);
+  });
+}
+
+function savePhoto(db, pieceId, blob, order = 0) {
+  return new Promise((resolve, reject) => {
+    const photo = { id: uuid(), pieceId, blob, order, createdAt: Date.now() };
+    const tx    = db.transaction('photos', 'readwrite');
+    const store = tx.objectStore('photos');
+    const req   = store.put(photo);
+    req.onsuccess = () => resolve(photo);
+    req.onerror   = () => reject(req.error);
+  });
+}
+
+function deletePhotosByPiece(db, pieceId) {
+  return new Promise((resolve, reject) => {
+    const tx    = db.transaction('photos', 'readwrite');
+    const store = tx.objectStore('photos');
+    const idx   = store.index('pieceId');
+    const req   = idx.getAllKeys(pieceId);
+    req.onsuccess = () => {
+      const keys = req.result;
+      let done = 0;
+      if (keys.length === 0) return resolve();
+      keys.forEach(k => {
+        const dr = store.delete(k);
+        dr.onsuccess = () => { if (++done === keys.length) resolve(); };
+        dr.onerror   = () => reject(dr.error);
+      });
+    };
+    req.onerror = () => reject(req.error);
+  });
+}
+
+
+/* ─────────────────────────────────────────────────────────────
+   UTILIDADES UI
+───────────────────────────────────────────────────────────── */
+
+/** Blobea un File del input a un Blob real */
+const fileToBlob = (file) =>
+  new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onload = (e) => resolve(new Blob([e.target.result], { type: file.type }));
+    reader.readAsArrayBuffer(file);
+  });
+
+/** Crea una Object URL para mostrar un Blob */
+const blobToUrl = (blob) => URL.createObjectURL(blob);
+
+/** Formatea una fecha ISO a cadena legible */
+const formatDate = (iso) => {
+  if (!iso) return '—';
+  const [y, m, d] = iso.split('-');
+  return `${d}/${m}/${y}`;
+};
+
+const TYPE_LABELS = {
+  anillo: 'Anillo', collar: 'Collar / Cadena', pulsera: 'Pulsera',
+  pendiente: 'Pendiente', broche: 'Broche', otro: 'Otro'
+};
+
+/** Toast de notificación */
+function showToast(msg, duration = 2200) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), duration);
+}
+
+
+/* ─────────────────────────────────────────────────────────────
+   ESTADO DE LA APLICACIÓN
+───────────────────────────────────────────────────────────── */
+let db;           // instancia IndexedDB
+let allPieces = []; // caché local de piezas
+let pendingPhotos = []; // fotos pendientes antes de guardar (File[])
+let currentPieceId = null; // pieza abierta en detalle
+
+/* ─────────────────────────────────────────────────────────────
+   VISTA: LISTA DE PIEZAS
+───────────────────────────────────────────────────────────── */
+async function renderList(filter = '') {
+  const grid = document.getElementById('pieces-grid');
+  grid.innerHTML = '';
+
+  const pieces = filter
+    ? allPieces.filter(p =>
+        p.name.toLowerCase().includes(filter.toLowerCase()) ||
+        (p.notes || '').toLowerCase().includes(filter.toLowerCase())
+      )
+    : allPieces;
+
+  if (pieces.length === 0) {
+    grid.innerHTML = `
+      <div class="empty-state" style="grid-column:1/-1">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+        </svg>
+        <p>Aún no hay piezas registradas.</p>
+        <p style="margin-top:.3rem;font-size:.78rem">Pulsa <strong>+</strong> para añadir la primera.</p>
+      </div>`;
+    return;
+  }
+
+  for (const piece of pieces) {
+    const card = document.createElement('div');
+    card.className = 'piece-card';
+    card.dataset.id = piece.id;
+
+    // Intentar cargar la primera foto como miniatura
+    const photos = await getPhotos(db, piece.id);
+    let thumbHTML = `<div class="thumb">${TYPE_LABELS[piece.type]?.[0] ?? '💎'}</div>`;
+    if (photos.length > 0) {
+      const url = blobToUrl(photos[0].blob);
+      thumbHTML = `<div class="thumb"><img src="${url}" alt="" loading="lazy" /></div>`;
+    }
+
+    card.innerHTML = `
+      ${thumbHTML}
+      <div class="info">
+        <h3 title="${piece.name}">${piece.name}</h3>
+        <p>${TYPE_LABELS[piece.type] ?? piece.type} · ${formatDate(piece.date)}</p>
+      </div>`;
+
+    card.addEventListener('click', () => openDetail(piece.id));
+    grid.appendChild(card);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   VISTA: DETALLE DE PIEZA
+───────────────────────────────────────────────────────────── */
+async function openDetail(pieceId) {
+  currentPieceId = pieceId;
+  const piece  = await getPiece(db, pieceId);
+  const photos = await getPhotos(db, pieceId);
+
+  document.getElementById('d-name').textContent = piece.name;
+  document.getElementById('d-meta').textContent =
+    `${TYPE_LABELS[piece.type] ?? piece.type}  ·  ${formatDate(piece.date)}`;
+  document.getElementById('d-ref').textContent = piece.ref ?? '—';
+  document.getElementById('d-notes').textContent = piece.notes || '(Sin notas)';
+  document.getElementById('d-photo-count').textContent = photos.length;
+
+  /* ── Tabla de datos técnicos ── */
+  const grid = document.getElementById('d-data-grid');
+  const fmt  = (v, unit = 'g') =>
+    v != null && v !== '' ? `${parseFloat(v).toFixed(2)} ${unit}` : '—';
+  const diff = (a, b) => {
+    if (a == null || b == null || a === '' || b === '') return null;
+    return (parseFloat(b) - parseFloat(a)).toFixed(2);
+  };
+
+  const weightDiff = diff(piece.weightBefore, piece.weightAfter);
+  const diffLabel  = weightDiff != null
+    ? `<span class="hl">${weightDiff > 0 ? '+' : ''}${weightDiff} g</span>`
+    : '—';
+
+  grid.innerHTML = `
+    <dt>Peso inicial</dt>   <dd>${fmt(piece.weightBefore)}</dd>
+    <dt>Peso final</dt>     <dd>${fmt(piece.weightAfter)}</dd>
+    <dt>Diferencia</dt>     <dd>${diffLabel}</dd>
+  `;
+
+  /* ── Pruebas de ley ── */
+  const leyContainer = document.getElementById('d-ley-tags');
+  const leyList = piece.ley ?? [];
+  if (leyList.length === 0) {
+    leyContainer.innerHTML = '<span style="color:var(--text-2);font-size:.82rem">No registrada</span>';
+  } else {
+    leyContainer.innerHTML = leyList
+      .map(l => `<span class="ley-tag">${l}</span>`)
+      .join('');
+  }
+
+  /* ── Galería ── */
+  const gallery = document.getElementById('d-gallery');
+  gallery.innerHTML = '';
+
+  if (photos.length === 0) {
+    gallery.innerHTML = `<p style="color:var(--text-2);font-size:.82rem">Sin fotos adjuntas.</p>`;
+  } else {
+    photos.forEach(photo => {
+      const url  = blobToUrl(photo.blob);
+      const item = document.createElement('div');
+      item.className = 'gallery-item';
+      item.innerHTML = `<img src="${url}" alt="Foto" loading="lazy" />`;
+      item.addEventListener('click', () => openLightbox(url));
+      gallery.appendChild(item);
+    });
+  }
+
+  App.showView('detail');
+}
+
+/* ─────────────────────────────────────────────────────────────
+   LIGHTBOX
+───────────────────────────────────────────────────────────── */
+function openLightbox(url) {
+  document.getElementById('lightbox-img').src = url;
+  document.getElementById('lightbox').classList.add('open');
+}
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('open');
+  document.getElementById('lightbox-img').src = '';
+}
+
+/* ─────────────────────────────────────────────────────────────
+   FORMULARIO: FOTOS PENDIENTES
+───────────────────────────────────────────────────────────── */
+function addPendingPhotos(files) {
+  const previews = document.getElementById('photo-previews');
+  Array.from(files).forEach(file => {
+    if (!file.type.startsWith('image/')) return;
+    const url  = URL.createObjectURL(file);
+    const idx  = pendingPhotos.push(file) - 1;
+
+    const wrap = document.createElement('div');
+    wrap.className = 'photo-preview';
+    wrap.dataset.idx = idx;
+    wrap.innerHTML = `
+      <img src="${url}" alt="" />
+      <button aria-label="Quitar foto">✕</button>`;
+    wrap.querySelector('button').addEventListener('click', () => {
+      pendingPhotos[idx] = null; // marcamos como eliminada
+      wrap.remove();
+    });
+    previews.appendChild(wrap);
+  });
+}
+
+/* ─────────────────────────────────────────────────────────────
+   GUARDAR PIEZA
+───────────────────────────────────────────────────────────── */
+async function handleSave() {
+  const name = document.getElementById('f-name').value.trim();
+  const ref  = document.getElementById('f-ref').value.trim();
+  if (!name) { showToast('⚠️ El nombre es obligatorio'); return; }
+  if (!ref)  { showToast('⚠️ La referencia es obligatoria'); return; }
+
+  // Recoger checkboxes de ley marcados
+  const leyChecked = [...document.querySelectorAll('.ley-chip input:checked')]
+    .map(cb => cb.value);
+  const leyCustom = document.getElementById('f-ley-custom').value.trim();
+  if (leyCustom) leyChecked.push(leyCustom);
+
+  const piece = {
+    name,
+    ref,
+    type:          document.getElementById('f-type').value,
+    date:          document.getElementById('f-date').value,
+    weightBefore:  document.getElementById('f-weight-before').value || null,
+    weightAfter:   document.getElementById('f-weight-after').value  || null,
+    ley:           leyChecked,   // array de strings
+    notes:         document.getElementById('f-notes').value.trim(),
+  };
+
+  const saved = await savePiece(db, piece);
+
+  // Guardar fotos pendientes en orden
+  const validPhotos = pendingPhotos.filter(Boolean);
+  for (let i = 0; i < validPhotos.length; i++) {
+    const blob = await fileToBlob(validPhotos[i]);
+    await savePhoto(db, saved.id, blob, i);
+  }
+
+  // Refrescar lista y volver
+  allPieces = await getPieces(db);
+  showToast('✓ Pieza guardada');
+  resetForm();
+  await renderList();
+  App.showView('list');
+}
+
+function resetForm() {
+  document.getElementById('f-ref').value           = '';
+  document.getElementById('f-name').value          = '';
+  document.getElementById('f-type').value          = 'anillo';
+  document.getElementById('f-date').value          = new Date().toISOString().split('T')[0];
+  document.getElementById('f-weight-before').value = '';
+  document.getElementById('f-weight-after').value  = '';
+  document.getElementById('f-ley-custom').value    = '';
+  document.querySelectorAll('.ley-chip input').forEach(cb => cb.checked = false);
+  document.getElementById('f-notes').value         = '';
+  document.getElementById('photo-previews').innerHTML = '';
+  pendingPhotos = [];
+}
+
+/* ─────────────────────────────────────────────────────────────
+   EXPORTAR PDF DE UNA PIEZA
+   Genera un documento A4 con:
+     · Cabecera con nombre y línea dorada decorativa
+     · Ficha de metadatos (tipo, fecha, id)
+     · Bloque de notas con word-wrap manual
+     · Galería de fotos (2 columnas, escaladas con aspect-ratio)
+     · Pie de página con número de página y fecha de exportación
+───────────────────────────────────────────────────────────── */
+async function exportPDF() {
+  if (!currentPieceId) return;
+
+  const btn = document.getElementById('btn-pdf');
+  btn.disabled = true;
+  btn.classList.add('loading');
+  btn.querySelector('svg').style.animation = 'spin .8s linear infinite';
+  showToast('Generando PDF…');
+
+  try {
+    const piece  = await getPiece(db, currentPieceId);
+    const photos = await getPhotos(db, currentPieceId);
+
+    /* ── Crear documento A4 ── */
+    const pdfDoc = await PDFDocument.create();
+    pdfDoc.setTitle(piece.name);
+    pdfDoc.setAuthor('Joyería · Taller');
+    pdfDoc.setCreationDate(new Date());
+
+    /* ── Fuentes estándar (no requieren descarga extra) ── */
+    const fontBold    = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+    const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
+
+    /* ── Paleta de colores (r,g,b en 0-1) ── */
+    const C = {
+      gold:    rgb(0.788, 0.659, 0.298),  // #c9a84c
+      ink:     rgb(0.102, 0.063, 0.035),  // #1a1009
+      darkGray:rgb(0.25,  0.19,  0.13),
+      midGray: rgb(0.55,  0.47,  0.38),
+      lightBg: rgb(0.965, 0.937, 0.847),  // #f5efd8
+      white:   rgb(1, 1, 1),
+      black:   rgb(0, 0, 0),
+    };
+
+    /* ── Dimensiones A4 ── */
+    const [W, H] = PageSizes.A4; // 595.28 x 841.89 pts
+    const M = 48;      // margen lateral
+    const contentW = W - M * 2;
+
+    /* ────────────────────────────────────────────────────────
+       Helpers de layout
+    ──────────────────────────────────────────────────────── */
+
+    /** Dibuja el fondo, cabecera y pie en una página nueva */
+    function addPage() {
+      const page = pdfDoc.addPage(PageSizes.A4);
+
+      // Fondo crema muy suave
+      page.drawRectangle({ x: 0, y: 0, width: W, height: H, color: C.lightBg });
+
+      // Banda superior dorada
+      page.drawRectangle({ x: 0, y: H - 36, width: W, height: 36, color: C.gold });
+
+      // Título en la banda
+      page.drawText('JOYERÍA · TALLER', {
+        x: M, y: H - 24,
+        size: 11, font: fontBold, color: C.ink,
+      });
+
+      // Fecha de exportación en la banda (derecha)
+      const dateStr = new Date().toLocaleDateString('es-ES', { day:'2-digit', month:'2-digit', year:'numeric' });
+      const dateW   = fontRegular.widthOfTextAtSize(dateStr, 9);
+      page.drawText(dateStr, {
+        x: W - M - dateW, y: H - 23,
+        size: 9, font: fontRegular, color: C.ink,
+      });
+
+      // Línea inferior de la banda
+      page.drawLine({
+        start: { x: 0, y: H - 36 }, end: { x: W, y: H - 36 },
+        thickness: 1, color: C.darkGray,
+      });
+
+      // Pie de página
+      page.drawLine({
+        start: { x: M, y: 28 }, end: { x: W - M, y: 28 },
+        thickness: .5, color: C.gold,
+      });
+      page.drawText('Registro de piezas · uso personal', {
+        x: M, y: 14,
+        size: 7, font: fontRegular, color: C.midGray,
+      });
+
+      return page;
+    }
+
+    /**
+     * Dibuja texto con word-wrap manual.
+     * Devuelve la Y final (cursor después del bloque).
+     */
+    function drawWrappedText(page, text, { x, y, width, size, font, color, lineHeight }) {
+      const words    = (text || '').split(' ');
+      let line       = '';
+      let curY       = y;
+
+      const flushLine = () => {
+        if (!line) return;
+        page.drawText(line.trim(), { x, y: curY, size, font, color });
+        curY -= lineHeight;
+        line = '';
+      };
+
+      for (const word of words) {
+        // Salto de línea explícito
+        if (word.includes('\n')) {
+          const parts = word.split('\n');
+          line += parts[0];
+          flushLine();
+          for (let i = 1; i < parts.length - 1; i++) {
+            line = parts[i];
+            flushLine();
+          }
+          line = parts[parts.length - 1] + ' ';
+          continue;
+        }
+
+        const test = line + word + ' ';
+        if (font.widthOfTextAtSize(test, size) > width && line !== '') {
+          flushLine();
+        }
+        line += word + ' ';
+      }
+      flushLine();
+      return curY;
+    }
+
+    /* ────────────────────────────────────────────────────────
+       PÁGINA 1 — Ficha de la pieza
+    ──────────────────────────────────────────────────────── */
+    let page = addPage();
+    let y    = H - 36 - 32; // inicio del contenido
+
+    /* Nombre de la pieza */
+    page.drawText(piece.name, {
+      x: M, y,
+      size: 22, font: fontBold, color: C.darkGray,
+      maxWidth: contentW,
+    });
+    y -= 8;
+
+    /* Línea decorativa dorada bajo el nombre */
+    page.drawLine({
+      start: { x: M, y }, end: { x: M + contentW, y },
+      thickness: 1.5, color: C.gold,
+    });
+    y -= 20;
+
+    /* ── Metadatos en tabla simple (2 columnas) ── */
+    const leyStr = (piece.ley && piece.ley.length > 0)
+      ? piece.ley.join('  ·  ')
+      : 'No registrada';
+
+    const fmtW = (v) => (v != null && v !== '') ? `${parseFloat(v).toFixed(2)} g` : '—';
+    const diffW = (a, b) => {
+      if (a == null || b == null || a === '' || b === '') return '—';
+      const d = (parseFloat(b) - parseFloat(a)).toFixed(2);
+      return `${d > 0 ? '+' : ''}${d} g`;
+    };
+
+    const meta = [
+      ['Referencia',       piece.ref || '—'],
+      ['Tipo',             TYPE_LABELS[piece.type] ?? piece.type],
+      ['Fecha',            formatDate(piece.date)],
+      ['Peso inicial',     fmtW(piece.weightBefore)],
+      ['Peso final',       fmtW(piece.weightAfter)],
+      ['Diferencia peso',  diffW(piece.weightBefore, piece.weightAfter)],
+      ['Prueba de ley',    leyStr],
+      ['Fotos adjuntas',   `${photos.length} imagen${photos.length !== 1 ? 'es' : ''}`],
+    ];
+
+    const colKey = M;
+    const colVal = M + 110;
+    const rowH   = 20;
+
+    // Fondo de la tabla (altura dinámica según número de filas)
+    page.drawRectangle({
+      x: M - 6, y: y - (meta.length * rowH) - 4,
+      width: contentW + 12, height: meta.length * rowH + 14,
+      color: rgb(0.93, 0.90, 0.82),
+    });
+    page.drawLine({
+      start: { x: M - 6, y: y + 10 },
+      end:   { x: M + contentW + 6, y: y + 10 },
+      thickness: 1, color: C.gold,
+    });
+
+    for (const [key, val] of meta) {
+      page.drawText(key.toUpperCase(), {
+        x: colKey, y,
+        size: 8, font: fontBold, color: C.midGray,
+      });
+      page.drawText(val, {
+        x: colVal, y,
+        size: 10, font: fontRegular, color: C.darkGray,
+      });
+      y -= rowH;
+    }
+    y -= 16;
+
+    /* ── Sección Notas ── */
+    page.drawText('NOTAS', {
+      x: M, y,
+      size: 8, font: fontBold, color: C.gold,
+    });
+    y -= 4;
+    page.drawLine({
+      start: { x: M, y }, end: { x: M + contentW, y },
+      thickness: .5, color: C.gold,
+    });
+    y -= 16;
+
+    const notesText = piece.notes || 'Sin notas.';
+    y = drawWrappedText(page, notesText, {
+      x: M, y,
+      width: contentW,
+      size: 10, font: fontRegular, color: C.darkGray,
+      lineHeight: 15,
+    });
+    y -= 24;
+
+    /* ────────────────────────────────────────────────────────
+       GALERÍA DE FOTOS
+       Disposición: 2 columnas, ancho igual, altura proporcional
+       Si no caben en la página actual se crea una nueva
+    ──────────────────────────────────────────────────────── */
+    if (photos.length > 0) {
+      page.drawText('GALERÍA DE IMÁGENES', {
+        x: M, y,
+        size: 8, font: fontBold, color: C.gold,
+      });
+      y -= 4;
+      page.drawLine({
+        start: { x: M, y }, end: { x: M + contentW, y },
+        thickness: .5, color: C.gold,
+      });
+      y -= 16;
+
+      const COLS   = 2;
+      const GAP    = 12;
+      const imgW   = (contentW - GAP * (COLS - 1)) / COLS;
+      const maxImgH = 180; // altura máxima por imagen
+      const BOTTOM  = 48;  // margen inferior (encima del pie)
+
+      let col = 0;
+      let rowTopY = y;     // Y superior de la fila actual
+      let rowH_px = 0;     // altura máxima en la fila actual
+
+      for (let i = 0; i < photos.length; i++) {
+        /* Convertir Blob a ArrayBuffer y embeber en pdf-lib */
+        const arrayBuf = await photos[i].blob.arrayBuffer();
+        const mimeType = photos[i].blob.type || 'image/jpeg';
+
+        let pdfImage;
+        try {
+          if (mimeType === 'image/png') {
+            pdfImage = await pdfDoc.embedPng(arrayBuf);
+          } else {
+            // jpeg / webp → pdf-lib solo soporta jpeg; webp lo intentamos como jpeg
+            pdfImage = await pdfDoc.embedJpg(arrayBuf);
+          }
+        } catch {
+          // Si falla (ej: webp no soportado), saltamos esta foto
+          continue;
+        }
+
+        /* Calcular dimensiones respetando aspect-ratio */
+        const { width: nW, height: nH } = pdfImage;
+        const scale  = Math.min(imgW / nW, maxImgH / nH, 1);
+        const drawW  = nW * scale;
+        const drawH  = nH * scale;
+
+        /* ¿Cabe en la fila actual? Si es primera columna, verificar espacio vertical */
+        if (col === 0 && rowTopY - drawH < BOTTOM) {
+          // Nueva página
+          page    = addPage();
+          rowTopY = H - 36 - 32;
+          y       = rowTopY;
+        }
+
+        const xPos = M + col * (imgW + GAP);
+        const yPos = rowTopY - drawH;
+
+        /* Sombra suave (rectángulo desplazado) */
+        page.drawRectangle({
+          x: xPos + 3, y: yPos - 3,
+          width: drawW, height: drawH,
+          color: rgb(0.7, 0.65, 0.55), opacity: 0.35,
+        });
+
+        /* Imagen */
+        page.drawImage(pdfImage, { x: xPos, y: yPos, width: drawW, height: drawH });
+
+        /* Borde */
+        page.drawRectangle({
+          x: xPos, y: yPos, width: drawW, height: drawH,
+          borderColor: C.gold, borderWidth: .8,
+          color: rgb(0, 0, 0), opacity: 0,
+        });
+
+        /* Número de foto */
+        page.drawText(`${i + 1}`, {
+          x: xPos + 4, y: yPos + 4,
+          size: 7, font: fontBold, color: C.gold,
+        });
+
+        rowH_px = Math.max(rowH_px, drawH);
+        col++;
+
+        if (col >= COLS) {
+          /* Avanzar a la siguiente fila */
+          col      = 0;
+          rowTopY -= rowH_px + GAP;
+          rowH_px  = 0;
+
+          /* Si no hay espacio para otra fila mínima, nueva página */
+          if (rowTopY - maxImgH < BOTTOM) {
+            page    = addPage();
+            rowTopY = H - 36 - 32;
+          }
+        }
+      }
+    }
+
+    /* ── Serializar y descargar ── */
+    const pdfBytes = await pdfDoc.save();
+    const blob     = new Blob([pdfBytes], { type: 'application/pdf' });
+    const url      = URL.createObjectURL(blob);
+
+    // Nombre de archivo: ref + nombre sanitizados
+    const safeRef  = (piece.ref  || 'sin-ref').replace(/[^a-z0-9-_]/gi, '-');
+    const safeName = (piece.name || 'pieza').replace(/[^a-z0-9áéíóúñ\s]/gi, '').trim().replace(/\s+/g, '_');
+    const link     = document.createElement('a');
+    link.href      = url;
+    link.download  = `${safeRef}_${safeName}_${piece.date || 'sin-fecha'}.pdf`;
+    link.click();
+
+    // Liberar la URL tras un momento
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+    showToast('✓ PDF descargado');
+
+  } catch (err) {
+    console.error('Error generando PDF:', err);
+    showToast('⚠️ Error al generar el PDF');
+  } finally {
+    btn.disabled = false;
+    btn.classList.remove('loading');
+    btn.querySelector('svg').style.animation = '';
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   ELIMINAR PIEZA
+───────────────────────────────────────────────────────────── */
+async function handleDelete() {
+  if (!currentPieceId) return;
+  if (!confirm('¿Eliminar esta pieza y todas sus fotos? Esta acción no se puede deshacer.')) return;
+  await deletePhotosByPiece(db, currentPieceId);
+  await deletePiece(db, currentPieceId);
+  allPieces = await getPieces(db);
+  showToast('Pieza eliminada');
+  await renderList();
+  App.showView('list');
+}
+
+/* ─────────────────────────────────────────────────────────────
+   APP  (objeto público para onclick en HTML)
+───────────────────────────────────────────────────────────── */
+window.App = {
+  showView(name) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById(`view-${name}`).classList.add('active');
+    // Nav activo
+    document.querySelectorAll('nav.bottom button').forEach(b => b.classList.remove('active'));
+    const navBtn = document.getElementById(`nav-${name}`);
+    if (navBtn) navBtn.classList.add('active');
+  }
+};
+
+/* ─────────────────────────────────────────────────────────────
+   BACKUP — EXPORTAR JSON COMPLETO (piezas + fotos en base64)
+   El archivo resultante es autosuficiente: contiene todo lo
+   necesario para restaurar la base de datos en otro dispositivo.
+───────────────────────────────────────────────────────────── */
+async function exportJSON({ includeFotos = true } = {}) {
+  showToast('Preparando backup…');
+
+  const pieces = await getPieces(db);
+  const backup = {
+    version:   2,                           // versión del esquema
+    exportedAt: new Date().toISOString(),
+    totalPieces: pieces.length,
+    pieces: [],
+  };
+
+  for (const piece of pieces) {
+    const entry = { ...piece, photos: [] };
+
+    if (includeFotos) {
+      const photos = await getPhotos(db, piece.id);
+      for (const photo of photos) {
+        // Convertir Blob → base64 para que sea serializable en JSON
+        const base64 = await blobToBase64(photo.blob);
+        entry.photos.push({
+          id:        photo.id,
+          order:     photo.order,
+          mimeType:  photo.blob.type || 'image/jpeg',
+          createdAt: photo.createdAt,
+          data:      base64,   // ← imagen completa en base64
+        });
+      }
+    }
+
+    backup.pieces.push(entry);
+  }
+
+  const json     = JSON.stringify(backup, null, 2);
+  const blob     = new Blob([json], { type: 'application/json' });
+  const url      = URL.createObjectURL(blob);
+  const fecha    = new Date().toISOString().split('T')[0];
+  const sufijo   = includeFotos ? 'completo' : 'fichas';
+  const link     = document.createElement('a');
+  link.href      = url;
+  link.download  = `joyeria_backup_${sufijo}_${fecha}.json`;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+
+  showToast(`✓ Backup exportado (${pieces.length} piezas)`);
+}
+
+/** Convierte un Blob a string base64 */
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload  = () => resolve(reader.result); // "data:image/jpeg;base64,..."
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
+}
+
+/* ─────────────────────────────────────────────────────────────
+   BACKUP — IMPORTAR JSON
+   Soporta dos modos:
+     · merge  → añade piezas nuevas, salta las que ya existen (por id)
+     · replace → borra todo primero y luego importa
+   Por seguridad siempre pedimos confirmación antes de replace.
+───────────────────────────────────────────────────────────── */
+async function importJSON(file, mode = 'merge') {
+  showToast('Leyendo archivo…');
+
+  let backup;
+  try {
+    const text = await file.text();
+    backup = JSON.parse(text);
+  } catch {
+    showToast('⚠️ El archivo no es un JSON válido');
+    return;
+  }
+
+  // Validar estructura mínima
+  if (!backup.pieces || !Array.isArray(backup.pieces)) {
+    showToast('⚠️ El archivo no tiene el formato correcto');
+    return;
+  }
+
+  const total    = backup.pieces.length;
+  const progress = document.getElementById('modal-progress');
+  const fill     = document.getElementById('modal-progress-fill');
+  progress.style.display = 'block';
+
+  if (mode === 'replace') {
+    // Borrar toda la DB antes de importar
+    const allExisting = await getPieces(db);
+    for (const p of allExisting) {
+      await deletePhotosByPiece(db, p.id);
+      await deletePiece(db, p.id);
+    }
+  }
+
+  let imported = 0;
+  let skipped  = 0;
+
+  for (let i = 0; i < backup.pieces.length; i++) {
+    const entry = backup.pieces[i];
+
+    // En modo merge, saltar piezas que ya existen
+    if (mode === 'merge') {
+      const existing = await getPiece(db, entry.id).catch(() => null);
+      if (existing) { skipped++; continue; }
+    }
+
+    // Guardar la pieza (sin el array photos, que no es parte del modelo)
+    const { photos, ...pieceData } = entry;
+    await savePiece(db, pieceData);
+
+    // Restaurar fotos desde base64
+    if (Array.isArray(photos)) {
+      for (const photo of photos) {
+        if (!photo.data) continue;
+        const blob = base64ToBlob(photo.data, photo.mimeType || 'image/jpeg');
+        await savePhoto(db, pieceData.id, blob, photo.order ?? 0);
+      }
+    }
+
+    imported++;
+
+    // Actualizar barra de progreso
+    const pct = Math.round(((i + 1) / total) * 100);
+    fill.style.width = `${pct}%`;
+  }
+
+  progress.style.display = 'none';
+  fill.style.width = '0%';
+
+  allPieces = await getPieces(db);
+  await renderList();
+
+  const msg = skipped > 0
+    ? `✓ ${imported} importadas, ${skipped} omitidas (ya existían)`
+    : `✓ ${imported} piezas restauradas`;
+  showToast(msg, 3500);
+}
+
+/** Convierte un data URL base64 de vuelta a Blob */
+function base64ToBlob(dataUrl, mimeType) {
+  const [, base64] = dataUrl.split(',');
+  const binary = atob(base64);
+  const bytes  = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return new Blob([bytes], { type: mimeType });
+}
+
+/* ─────────────────────────────────────────────────────────────
+   MODAL — Sistema de confirmación reutilizable
+───────────────────────────────────────────────────────────── */
+function openModal({ title, desc, confirmLabel = 'Confirmar', onConfirm, danger = true }) {
+  document.getElementById('modal-title').textContent   = title;
+  document.getElementById('modal-desc').textContent    = desc;
+  document.getElementById('modal-confirm').textContent = confirmLabel;
+  document.getElementById('modal-confirm').className   =
+    `btn btn-sm ${danger ? 'btn-danger' : 'btn-primary'}`;
+  document.getElementById('modal-overlay').classList.add('open');
+
+  // Limpiar listeners anteriores clonando el nodo
+  const confirmBtn = document.getElementById('modal-confirm');
+  const fresh = confirmBtn.cloneNode(true);
+  fresh.textContent = confirmLabel;
+  fresh.className   = `btn btn-sm ${danger ? 'btn-danger' : 'btn-primary'}`;
+  confirmBtn.replaceWith(fresh);
+
+  fresh.addEventListener('click', () => {
+    closeModal();
+    onConfirm();
+  }, { once: true });
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  document.getElementById('modal-progress').style.display = 'none';
+  document.getElementById('modal-progress-fill').style.width = '0%';
+}
+
+/* ─────────────────────────────────────────────────────────────
+   BORRAR TODOS LOS DATOS
+───────────────────────────────────────────────────────────── */
+async function clearAllData() {
+  const pieces = await getPieces(db);
+  for (const p of pieces) {
+    await deletePhotosByPiece(db, p.id);
+    await deletePiece(db, p.id);
+  }
+  allPieces = [];
+  await renderList();
+  showToast('Base de datos borrada');
+}
+
+/* ─────────────────────────────────────────────────────────────
+   INICIALIZACIÓN
+───────────────────────────────────────────────────────────── */
+async function init() {
+  // Abrir DB
+  db = await openDB();
+
+  // Cargar piezas
+  allPieces = await getPieces(db);
+  await renderList();
+
+  // Fecha por defecto en el formulario
+  document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
+
+  /* ── Eventos del formulario ── */
+  // Drop zone
+  const dropZone = document.getElementById('photo-drop');
+  const fileInput = document.getElementById('photo-input');
+
+  dropZone.addEventListener('click', () => fileInput.click());
+
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('over'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('over'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault(); dropZone.classList.remove('over');
+    addPendingPhotos(e.dataTransfer.files);
+  });
+
+  fileInput.addEventListener('change', () => {
+    addPendingPhotos(fileInput.files);
+    fileInput.value = ''; // reset para permitir re-selección
+  });
+
+  // Guardar
+  document.getElementById('btn-save').addEventListener('click', handleSave);
+
+  // Cancelar formulario
+  document.getElementById('btn-cancel').addEventListener('click', () => {
+    resetForm();
+    App.showView('list');
+  });
+
+  // Volver desde detalle
+  document.getElementById('btn-back').addEventListener('click', () => App.showView('list'));
+
+  // Eliminar pieza
+  document.getElementById('btn-delete').addEventListener('click', handleDelete);
+
+  // Exportar PDF
+  document.getElementById('btn-pdf').addEventListener('click', exportPDF);
+
+  // ── Ajustes / Backup ──────────────────────────────────────
+
+  // Exportar backup completo (con fotos)
+  document.getElementById('btn-export-json').addEventListener('click', () => {
+    exportJSON({ includeFotos: true });
+  });
+
+  // Exportar solo fichas (sin fotos)
+  document.getElementById('btn-export-meta').addEventListener('click', () => {
+    exportJSON({ includeFotos: false });
+  });
+
+  // Importar backup — abre el selector de archivo
+  const importInput = document.getElementById('import-input');
+  document.getElementById('btn-import-trigger').addEventListener('click', () => {
+    importInput.click();
+  });
+
+  // Cuando se selecciona el archivo, pedir confirmación
+  importInput.addEventListener('change', () => {
+    const file = importInput.files[0];
+    if (!file) return;
+    importInput.value = ''; // reset para permitir re-selección
+
+    openModal({
+      title:        '¿Cómo quieres importar?',
+      desc:         'Fusionar añade las piezas nuevas sin borrar las actuales. Reemplazar borra todos los datos actuales antes de importar.',
+      confirmLabel: 'Fusionar (recomendado)',
+      danger:       false,
+      onConfirm:    () => importJSON(file, 'merge'),
+    });
+
+    // Añadimos un botón extra de "Reemplazar" al modal dinámicamente
+    // usando un segundo openModal tras cerrar no es limpio;
+    // en su lugar mostramos un confirm nativo solo para el reemplazo:
+    const overlay = document.getElementById('modal-overlay');
+    const actions = overlay.querySelector('.modal-actions');
+    // Quitar si ya existía uno previo
+    overlay.querySelector('.btn-replace')?.remove();
+    const replaceBtn = document.createElement('button');
+    replaceBtn.className   = 'btn btn-danger btn-sm btn-replace';
+    replaceBtn.textContent = 'Reemplazar todo';
+    replaceBtn.addEventListener('click', () => {
+      closeModal();
+      if (confirm('⚠️ Esto borrará TODOS tus datos actuales antes de importar. ¿Estás segura?')) {
+        importJSON(file, 'replace');
+      }
+    }, { once: true });
+    actions.prepend(replaceBtn);
+  });
+
+  // Borrar todos los datos
+  document.getElementById('btn-clear-all').addEventListener('click', () => {
+    openModal({
+      title:        'Borrar todos los datos',
+      desc:         'Se eliminarán todas las piezas y fotos permanentemente. Esta acción no se puede deshacer. ¿Has hecho un backup?',
+      confirmLabel: 'Sí, borrar todo',
+      danger:       true,
+      onConfirm:    clearAllData,
+    });
+  });
+
+  // Cerrar modal al pulsar fuera o en cancelar
+  document.getElementById('modal-cancel').addEventListener('click', closeModal);
+  document.getElementById('modal-overlay').addEventListener('click', e => {
+    if (e.target === e.currentTarget) closeModal();
+  });
+
+  // Lightbox cerrar
+  document.getElementById('close-lb').addEventListener('click', closeLightbox);
+  document.getElementById('lightbox').addEventListener('click', e => {
+    if (e.target === e.currentTarget) closeLightbox();
+  });
+
+  // Búsqueda
+  document.getElementById('search-input').addEventListener('input', e => {
+    renderList(e.target.value);
+  });
+}
+
+init().catch(err => {
+  console.error('Error iniciando la app:', err);
+  showToast('Error al iniciar la base de datos');
+});
+
+/* ─────────────────────────────────────────────────────────────
+   SERVICE WORKER (registro inline)
+   En producción mueve esto a sw.js separado
+───────────────────────────────────────────────────────────── */
+if ('serviceWorker' in navigator) {
+  const swContent = `
+    const CACHE = 'joyeria-v1';
+    self.addEventListener('install', e => {
+      e.waitUntil(caches.open(CACHE).then(c => c.addAll(['/'])));
+    });
+    self.addEventListener('fetch', e => {
+      e.respondWith(
+        caches.match(e.request).then(r => r || fetch(e.request))
+      );
+    });
+  `;
+  const blob = new Blob([swContent], { type: 'application/javascript' });
+  const swUrl = URL.createObjectURL(blob);
+  navigator.serviceWorker.register(swUrl, { scope: '/' })
+    .then(() => console.log('[PWA] Service Worker registrado'))
+    .catch(e => console.warn('[PWA] SW no disponible en este contexto:', e.message));
+}
+
+</script>
+</body>
+</html>
