@@ -628,18 +628,31 @@
         <div class="field">
           <textarea id="f-notes" placeholder="Material, observaciones generales…"></textarea>
         </div>
-        <p class="section-title">Fotos</p>
-        <div class="photo-drop" id="photo-drop">
+        <p class="section-title">Fotos al recibir la pieza</p>
+        <div class="photo-drop" id="photo-drop-recepcion">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
             <rect x="3" y="3" width="18" height="18" rx="2"/>
             <circle cx="8.5" cy="8.5" r="1.5"/>
             <polyline points="21 15 16 10 5 21"/>
           </svg>
-          <div>Toca para añadir fotos</div>
+          <div>Estado de entrada</div>
           <small>JPG · PNG · WEBP</small>
         </div>
-        <input type="file" id="photo-input" accept="image/*" multiple />
-        <div class="photo-previews" id="photo-previews"></div>
+        <input type="file" id="photo-input-recepcion" accept="image/*" multiple />
+        <div class="photo-previews" id="photo-previews-recepcion"></div>
+
+        <p class="section-title" style="margin-top:1rem">Fotos al terminar el arreglo</p>
+        <div class="photo-drop" id="photo-drop-entrega">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <rect x="3" y="3" width="18" height="18" rx="2"/>
+            <circle cx="8.5" cy="8.5" r="1.5"/>
+            <polyline points="21 15 16 10 5 21"/>
+          </svg>
+          <div>Estado de salida</div>
+          <small>JPG · PNG · WEBP</small>
+        </div>
+        <input type="file" id="photo-input-entrega" accept="image/*" multiple />
+        <div class="photo-previews" id="photo-previews-entrega"></div>
       </div><!-- /tab-basico -->
 
       <!-- ══ TAB 2: DATOS DEL CLIENTE ══════════════════════ -->
@@ -876,8 +889,17 @@
     </div>
 
     <!-- Galería -->
-    <p class="section-title" style="margin-top:.5rem">Galería <span class="badge" id="d-photo-count">0</span></p>
-    <div class="gallery" id="d-gallery"></div>
+    <!-- Galería recepción -->
+    <p class="section-title" style="margin-top:.5rem">
+      Fotos de entrada <span class="badge" id="d-photo-count-recepcion">0</span>
+    </p>
+    <div class="gallery" id="d-gallery-recepcion"></div>
+
+    <!-- Galería entrega -->
+    <p class="section-title" style="margin-top:1rem">
+      Fotos de salida <span class="badge" id="d-photo-count-entrega">0</span>
+    </p>
+    <div class="gallery" id="d-gallery-entrega"></div>
 
     <div style="display:flex;gap:.6rem;margin-top:1.5rem;flex-wrap:wrap">
       <button class="btn btn-danger btn-sm" id="btn-delete">Eliminar pieza</button>
@@ -1048,7 +1070,7 @@ import { PDFDocument, rgb, StandardFonts, PageSizes } from 'pdf-lib';
            deletePiece(), getPhotos(), savePhoto(), deletePhoto()
 ───────────────────────────────────────────────────────────── */
 const DB_NAME    = 'joyeria-db';
-const DB_VERSION = 2; // ← bumpeado al añadir campos nuevos
+const DB_VERSION = 3; // v3: campo tipo en photos ('recepcion' | 'entrega')
 
 /** Abre (o crea) la base de datos IndexedDB */
 function openDB() {
@@ -1070,6 +1092,19 @@ function openDB() {
         const ph = db.createObjectStore('photos', { keyPath: 'id' });
         ph.createIndex('pieceId', 'pieceId');
         ph.createIndex('order',   'order');
+        ph.createIndex('tipo',    'tipo');  // 'recepcion' | 'entrega'
+      } else if (e.oldVersion < 3) {
+        // Migración: las fotos existentes sin tipo → 'recepcion'
+        const ph = e.target.transaction.objectStore('photos');
+        ph.createIndex('tipo', 'tipo');
+        // Actualizar registros existentes asignando tipo='recepcion'
+        ph.openCursor().onsuccess = (ev) => {
+          const cursor = ev.target.result;
+          if (!cursor) return;
+          const photo = cursor.value;
+          if (!photo.tipo) { photo.tipo = 'recepcion'; cursor.update(photo); }
+          cursor.continue();
+        };
       }
       // v2: los campos nuevos (ref, weightBefore, weightAfter, ley)
       // son planos en el objeto piece, no requieren índice extra.
@@ -1139,20 +1174,24 @@ function deletePiece(db, id) {
 
 /* --- PHOTOS CRUD ------------------------------------------- */
 
-function getPhotos(db, pieceId) {
+function getPhotos(db, pieceId, tipo = null) {
   return new Promise((resolve, reject) => {
     const tx    = db.transaction('photos', 'readonly');
     const store = tx.objectStore('photos');
     const idx   = store.index('pieceId');
     const req   = idx.getAll(pieceId);
-    req.onsuccess = () => resolve(req.result.sort((a, b) => a.order - b.order));
-    req.onerror   = () => reject(req.error);
+    req.onsuccess = () => {
+      let results = req.result.sort((a, b) => a.order - b.order);
+      if (tipo) results = results.filter(p => (p.tipo ?? 'recepcion') === tipo);
+      resolve(results);
+    };
+    req.onerror = () => reject(req.error);
   });
 }
 
-function savePhoto(db, pieceId, blob, order = 0) {
+function savePhoto(db, pieceId, blob, order = 0, tipo = 'recepcion') {
   return new Promise((resolve, reject) => {
-    const photo = { id: uuid(), pieceId, blob, order, createdAt: Date.now() };
+    const photo = { id: uuid(), pieceId, blob, order, tipo, createdAt: Date.now() };
     const tx    = db.transaction('photos', 'readwrite');
     const store = tx.objectStore('photos');
     const req   = store.put(photo);
@@ -1222,10 +1261,11 @@ function showToast(msg, duration = 2200) {
    ESTADO DE LA APLICACIÓN
 ───────────────────────────────────────────────────────────── */
 let db;
-let allPieces    = [];
-let pendingPhotos = [];
-let currentPieceId = null;
-let editingPieceId = null;   // ← null = nueva pieza, string = editando
+let allPieces         = [];
+let pendingRecepcion  = [];   // fotos al recibir la pieza
+let pendingEntrega    = [];   // fotos al terminar el arreglo
+let currentPieceId    = null;
+let editingPieceId    = null;
 
 /* ─────────────────────────────────────────────────────────────
    TABS DEL FORMULARIO
@@ -1325,10 +1365,11 @@ function loadPieceIntoForm(piece) {
   }
   document.getElementById('f-cal-notas').value = cal.notas ?? '';
 
-  // Las fotos existentes NO se precargan en pendingPhotos
-  // (se mantienen en DB y solo se añaden las nuevas)
-  document.getElementById('photo-previews').innerHTML = '';
-  pendingPhotos = [];
+  // Las fotos existentes NO se precargan (se mantienen en DB, solo se añaden nuevas)
+  document.getElementById('photo-previews-recepcion').innerHTML = '';
+  document.getElementById('photo-previews-entrega').innerHTML   = '';
+  pendingRecepcion = [];
+  pendingEntrega   = [];
 
   switchTab('tab-basico');
 }
@@ -1390,7 +1431,6 @@ async function renderList(filter = '') {
 async function openDetail(pieceId) {
   currentPieceId = pieceId;
   const piece  = await getPiece(db, pieceId);
-  const photos = await getPhotos(db, pieceId);
 
   // Cabecera
   document.getElementById('d-name').textContent = piece.name;
@@ -1488,22 +1528,32 @@ async function openDetail(pieceId) {
   // ── Notas generales ──
   document.getElementById('d-notes').textContent = piece.notes || '(Sin notas)';
 
-  // ── Galería ──
-  document.getElementById('d-photo-count').textContent = photos.length;
-  const gallery = document.getElementById('d-gallery');
-  gallery.innerHTML = '';
-  if (photos.length === 0) {
-    gallery.innerHTML = `<p style="color:var(--text-2);font-size:.82rem">Sin fotos adjuntas.</p>`;
-  } else {
-    photos.forEach(photo => {
-      const url  = blobToUrl(photo.blob);
-      const item = document.createElement('div');
-      item.className = 'gallery-item';
-      item.innerHTML = `<img src="${url}" alt="Foto" loading="lazy" />`;
-      item.addEventListener('click', () => openLightbox(url));
-      gallery.appendChild(item);
-    });
+  // ── Galerías por tipo ──
+  const photosRecepcion = await getPhotos(db, pieceId, 'recepcion');
+  const photosEntrega   = await getPhotos(db, pieceId, 'entrega');
+
+  document.getElementById('d-photo-count-recepcion').textContent = photosRecepcion.length;
+  document.getElementById('d-photo-count-entrega').textContent   = photosEntrega.length;
+
+  function renderGallery(photos, containerId) {
+    const gallery = document.getElementById(containerId);
+    gallery.innerHTML = '';
+    if (photos.length === 0) {
+      gallery.innerHTML = `<p style="color:var(--text-2);font-size:.82rem;padding:.25rem 0">Sin fotos.</p>`;
+    } else {
+      photos.forEach(photo => {
+        const url  = blobToUrl(photo.blob);
+        const item = document.createElement('div');
+        item.className = 'gallery-item';
+        item.innerHTML = `<img src="${url}" alt="Foto" loading="lazy" />`;
+        item.addEventListener('click', () => openLightbox(url));
+        gallery.appendChild(item);
+      });
+    }
   }
+
+  renderGallery(photosRecepcion, 'd-gallery-recepcion');
+  renderGallery(photosEntrega,   'd-gallery-entrega');
 
   App.showView('detail');
 }
@@ -1522,22 +1572,24 @@ function closeLightbox() {
 
 /* ─────────────────────────────────────────────────────────────
    FORMULARIO: FOTOS PENDIENTES
+   tipo: 'recepcion' | 'entrega'
 ───────────────────────────────────────────────────────────── */
-function addPendingPhotos(files) {
-  const previews = document.getElementById('photo-previews');
+function addPendingPhotos(files, tipo) {
+  const arr      = tipo === 'entrega' ? pendingEntrega : pendingRecepcion;
+  const previews = document.getElementById(`photo-previews-${tipo}`);
+
   Array.from(files).forEach(file => {
     if (!file.type.startsWith('image/')) return;
     const url  = URL.createObjectURL(file);
-    const idx  = pendingPhotos.push(file) - 1;
+    const idx  = arr.push(file) - 1;
 
     const wrap = document.createElement('div');
     wrap.className = 'photo-preview';
-    wrap.dataset.idx = idx;
     wrap.innerHTML = `
       <img src="${url}" alt="" />
       <button aria-label="Quitar foto">✕</button>`;
     wrap.querySelector('button').addEventListener('click', () => {
-      pendingPhotos[idx] = null; // marcamos como eliminada
+      arr[idx] = null;
       wrap.remove();
     });
     previews.appendChild(wrap);
@@ -1623,15 +1675,23 @@ async function handleSave() {
     if (existing?.createdAt) piece.createdAt = existing.createdAt;
   }
 
-  const isEditing = !!editingPieceId;  // capturar antes del reset
+  const isEditing = !!editingPieceId;
   const saved = await savePiece(db, piece);
 
-  // Fotos: solo añadir las nuevas pendientes (no reemplazar las existentes)
-  const validPhotos = pendingPhotos.filter(Boolean);
-  const existingPhotos = await getPhotos(db, saved.id);
-  for (let i = 0; i < validPhotos.length; i++) {
-    const blob = await fileToBlob(validPhotos[i]);
-    await savePhoto(db, saved.id, blob, existingPhotos.length + i);
+  // Guardar fotos nuevas de recepción
+  const validRecepcion = pendingRecepcion.filter(Boolean);
+  const existingRecepcion = await getPhotos(db, saved.id, 'recepcion');
+  for (let i = 0; i < validRecepcion.length; i++) {
+    const blob = await fileToBlob(validRecepcion[i]);
+    await savePhoto(db, saved.id, blob, existingRecepcion.length + i, 'recepcion');
+  }
+
+  // Guardar fotos nuevas de entrega
+  const validEntrega = pendingEntrega.filter(Boolean);
+  const existingEntrega = await getPhotos(db, saved.id, 'entrega');
+  for (let i = 0; i < validEntrega.length; i++) {
+    const blob = await fileToBlob(validEntrega[i]);
+    await savePhoto(db, saved.id, blob, existingEntrega.length + i, 'entrega');
   }
 
   allPieces = await getPieces(db);
@@ -1657,8 +1717,10 @@ function resetForm() {
   document.getElementById('f-ley-custom').value    = '';
   document.querySelectorAll('.ley-chip input').forEach(cb => cb.checked = false);
   document.getElementById('f-notes').value         = '';
-  document.getElementById('photo-previews').innerHTML = '';
-  pendingPhotos = [];
+  document.getElementById('photo-previews-recepcion').innerHTML = '';
+  document.getElementById('photo-previews-entrega').innerHTML   = '';
+  pendingRecepcion = [];
+  pendingEntrega   = [];
 
   // Cliente
   document.getElementById('f-cli-nombre').value      = '';
@@ -1705,8 +1767,10 @@ async function exportPDF() {
   showToast('Generando PDF…');
 
   try {
-    const piece  = await getPiece(db, currentPieceId);
-    const photos = await getPhotos(db, currentPieceId);
+    const piece           = await getPiece(db, currentPieceId);
+    const photosRecepcion = await getPhotos(db, currentPieceId, 'recepcion');
+    const photosEntrega   = await getPhotos(db, currentPieceId, 'entrega');
+    const allPhotos       = [...photosRecepcion, ...photosEntrega];
 
     /* ── Crear documento A4 ── */
     const pdfDoc = await PDFDocument.create();
@@ -1862,7 +1926,8 @@ async function exportPDF() {
       ['Peso final',       fmtW(piece.weightAfter)],
       ['Diferencia peso',  diffW(piece.weightBefore, piece.weightAfter)],
       ['Prueba de ley',    leyStr],
-      ['Fotos adjuntas',   `${photos.length} imagen${photos.length !== 1 ? 'es' : ''}`],
+      ['Fotos entrada',    `${photosRecepcion.length} imagen${photosRecepcion.length !== 1 ? 'es' : ''}`],
+      ['Fotos salida',     `${photosEntrega.length} imagen${photosEntrega.length !== 1 ? 'es' : ''}`],
     ];
 
     const colKey = M;
@@ -1916,12 +1981,21 @@ async function exportPDF() {
     y -= 24;
 
     /* ────────────────────────────────────────────────────────
-       GALERÍA DE FOTOS
-       Disposición: 2 columnas, ancho igual, altura proporcional
-       Si no caben en la página actual se crea una nueva
+       GALERÍAS DE FOTOS: recepción y entrega por separado
     ──────────────────────────────────────────────────────── */
-    if (photos.length > 0) {
-      page.drawText('GALERÍA DE IMÁGENES', {
+    const COLS    = 2;
+    const GAP     = 12;
+    const imgW    = (contentW - GAP * (COLS - 1)) / COLS;
+    const maxImgH = 180;
+    const BOTTOM  = 48;
+
+    /** Dibuja un grupo de fotos con su título de sección */
+    async function drawPhotoGroup(photoList, titulo) {
+      if (photoList.length === 0) return;
+
+      // Título de grupo
+      if (y - 40 < BOTTOM) { page = addPage(); y = H - 36 - 32; }
+      page.drawText(titulo.toUpperCase(), {
         x: M, y,
         size: 8, font: fontBold, color: C.gold,
       });
@@ -1932,43 +2006,27 @@ async function exportPDF() {
       });
       y -= 16;
 
-      const COLS   = 2;
-      const GAP    = 12;
-      const imgW   = (contentW - GAP * (COLS - 1)) / COLS;
-      const maxImgH = 180; // altura máxima por imagen
-      const BOTTOM  = 48;  // margen inferior (encima del pie)
+      let col     = 0;
+      let rowTopY = y;
+      let rowH_px = 0;
 
-      let col = 0;
-      let rowTopY = y;     // Y superior de la fila actual
-      let rowH_px = 0;     // altura máxima en la fila actual
-
-      for (let i = 0; i < photos.length; i++) {
-        /* Convertir Blob a ArrayBuffer y embeber en pdf-lib */
-        const arrayBuf = await photos[i].blob.arrayBuffer();
-        const mimeType = photos[i].blob.type || 'image/jpeg';
+      for (let i = 0; i < photoList.length; i++) {
+        const arrayBuf = await photoList[i].blob.arrayBuffer();
+        const mimeType = photoList[i].blob.type || 'image/jpeg';
 
         let pdfImage;
         try {
-          if (mimeType === 'image/png') {
-            pdfImage = await pdfDoc.embedPng(arrayBuf);
-          } else {
-            // jpeg / webp → pdf-lib solo soporta jpeg; webp lo intentamos como jpeg
-            pdfImage = await pdfDoc.embedJpg(arrayBuf);
-          }
-        } catch {
-          // Si falla (ej: webp no soportado), saltamos esta foto
-          continue;
-        }
+          pdfImage = mimeType === 'image/png'
+            ? await pdfDoc.embedPng(arrayBuf)
+            : await pdfDoc.embedJpg(arrayBuf);
+        } catch { continue; }
 
-        /* Calcular dimensiones respetando aspect-ratio */
         const { width: nW, height: nH } = pdfImage;
-        const scale  = Math.min(imgW / nW, maxImgH / nH, 1);
-        const drawW  = nW * scale;
-        const drawH  = nH * scale;
+        const scale = Math.min(imgW / nW, maxImgH / nH, 1);
+        const drawW = nW * scale;
+        const drawH = nH * scale;
 
-        /* ¿Cabe en la fila actual? Si es primera columna, verificar espacio vertical */
         if (col === 0 && rowTopY - drawH < BOTTOM) {
-          // Nueva página
           page    = addPage();
           rowTopY = H - 36 - 32;
           y       = rowTopY;
@@ -1977,46 +2035,27 @@ async function exportPDF() {
         const xPos = M + col * (imgW + GAP);
         const yPos = rowTopY - drawH;
 
-        /* Sombra suave (rectángulo desplazado) */
-        page.drawRectangle({
-          x: xPos + 3, y: yPos - 3,
-          width: drawW, height: drawH,
-          color: rgb(0.75, 0.68, 0.52), opacity: 0.35,
-        });
-
-        /* Imagen */
+        page.drawRectangle({ x: xPos + 3, y: yPos - 3, width: drawW, height: drawH, color: rgb(0.75, 0.68, 0.52), opacity: 0.35 });
         page.drawImage(pdfImage, { x: xPos, y: yPos, width: drawW, height: drawH });
-
-        /* Borde */
-        page.drawRectangle({
-          x: xPos, y: yPos, width: drawW, height: drawH,
-          borderColor: C.gold, borderWidth: .8,
-          color: rgb(0, 0, 0), opacity: 0,
-        });
-
-        /* Número de foto */
-        page.drawText(`${i + 1}`, {
-          x: xPos + 4, y: yPos + 4,
-          size: 7, font: fontBold, color: C.gold,
-        });
+        page.drawRectangle({ x: xPos, y: yPos, width: drawW, height: drawH, borderColor: C.gold, borderWidth: .8, color: rgb(0,0,0), opacity: 0 });
+        page.drawText(`${i + 1}`, { x: xPos + 4, y: yPos + 4, size: 7, font: fontBold, color: C.gold });
 
         rowH_px = Math.max(rowH_px, drawH);
         col++;
 
         if (col >= COLS) {
-          /* Avanzar a la siguiente fila */
           col      = 0;
           rowTopY -= rowH_px + GAP;
           rowH_px  = 0;
-
-          /* Si no hay espacio para otra fila mínima, nueva página */
-          if (rowTopY - maxImgH < BOTTOM) {
-            page    = addPage();
-            rowTopY = H - 36 - 32;
-          }
+          if (rowTopY - maxImgH < BOTTOM) { page = addPage(); rowTopY = H - 36 - 32; }
         }
       }
+
+      y = rowTopY - rowH_px - 24;
     }
+
+    await drawPhotoGroup(photosRecepcion, 'Fotos de entrada (recepción)');
+    await drawPhotoGroup(photosEntrega,   'Fotos de salida (tras el arreglo)');
 
     /* ── Serializar y descargar ── */
     const pdfBytes = await pdfDoc.save();
@@ -2108,9 +2147,10 @@ async function exportJSON({ includeFotos = true } = {}) {
         entry.photos.push({
           id:        photo.id,
           order:     photo.order,
+          tipo:      photo.tipo ?? 'recepcion',
           mimeType:  photo.blob.type || 'image/jpeg',
           createdAt: photo.createdAt,
-          data:      base64,   // ← imagen completa en base64
+          data:      base64,
         });
       }
     }
@@ -2202,7 +2242,7 @@ async function importJSON(file, mode = 'merge') {
       for (const photo of photos) {
         if (!photo.data) continue;
         const blob = base64ToBlob(photo.data, photo.mimeType || 'image/jpeg');
-        await savePhoto(db, pieceData.id, blob, photo.order ?? 0);
+        await savePhoto(db, pieceData.id, blob, photo.order ?? 0, photo.tipo ?? 'recepcion');
       }
     }
 
@@ -2307,22 +2347,22 @@ async function init() {
     App.showView('form');
   });
 
-  /* ── Drop zone fotos ── */
-  const dropZone = document.getElementById('photo-drop');
-  const fileInput = document.getElementById('photo-input');
+  /* ── Drop zones de fotos (recepción y entrega) ── */
+  ['recepcion', 'entrega'].forEach(tipo => {
+    const dropZone  = document.getElementById(`photo-drop-${tipo}`);
+    const fileInput = document.getElementById(`photo-input-${tipo}`);
 
-  dropZone.addEventListener('click', () => fileInput.click());
-
-  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('over'); });
-  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('over'));
-  dropZone.addEventListener('drop', e => {
-    e.preventDefault(); dropZone.classList.remove('over');
-    addPendingPhotos(e.dataTransfer.files);
-  });
-
-  fileInput.addEventListener('change', () => {
-    addPendingPhotos(fileInput.files);
-    fileInput.value = ''; // reset para permitir re-selección
+    dropZone.addEventListener('click', () => fileInput.click());
+    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('over'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('over'));
+    dropZone.addEventListener('drop', e => {
+      e.preventDefault(); dropZone.classList.remove('over');
+      addPendingPhotos(e.dataTransfer.files, tipo);
+    });
+    fileInput.addEventListener('change', () => {
+      addPendingPhotos(fileInput.files, tipo);
+      fileInput.value = '';
+    });
   });
 
   // Guardar
