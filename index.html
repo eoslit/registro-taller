@@ -1615,9 +1615,15 @@ async function handleSave() {
     },
   };
 
-  // Si editando, preservar el id original
-  if (editingPieceId) piece.id = editingPieceId;
+  // Si editando, preservar id Y createdAt original para no romper el índice
+  if (editingPieceId) {
+    piece.id = editingPieceId;
+    // Recuperar createdAt del registro existente antes de sobreescribir
+    const existing = await getPiece(db, editingPieceId);
+    if (existing?.createdAt) piece.createdAt = existing.createdAt;
+  }
 
+  const isEditing = !!editingPieceId;  // capturar antes del reset
   const saved = await savePiece(db, piece);
 
   // Fotos: solo añadir las nuevas pendientes (no reemplazar las existentes)
@@ -1629,9 +1635,10 @@ async function handleSave() {
   }
 
   allPieces = await getPieces(db);
-  showToast(editingPieceId ? '✓ Pieza actualizada' : '✓ Pieza guardada');
+  const msg = isEditing ? '✓ Pieza actualizada' : '✓ Pieza guardada';
   resetForm();
   await renderList();
+  showToast(msg);
   App.showView('list');
 }
 
@@ -2043,13 +2050,21 @@ async function exportPDF() {
 ───────────────────────────────────────────────────────────── */
 async function handleDelete() {
   if (!currentPieceId) return;
-  if (!confirm('¿Eliminar esta pieza y todas sus fotos? Esta acción no se puede deshacer.')) return;
-  await deletePhotosByPiece(db, currentPieceId);
-  await deletePiece(db, currentPieceId);
-  allPieces = await getPieces(db);
-  showToast('Pieza eliminada');
-  await renderList();
-  App.showView('list');
+  const piece = await getPiece(db, currentPieceId);
+  openModal({
+    title:        `Eliminar "${piece.name}"`,
+    desc:         'Se borrarán la ficha y todas las fotos asociadas. Esta acción no se puede deshacer.',
+    confirmLabel: 'Sí, eliminar',
+    danger:       true,
+    onConfirm:    async () => {
+      await deletePhotosByPiece(db, currentPieceId);
+      await deletePiece(db, currentPieceId);
+      allPieces = await getPieces(db);
+      await renderList();
+      App.showView('list');
+      showToast('Pieza eliminada');
+    },
+  });
 }
 
 /* ─────────────────────────────────────────────────────────────
