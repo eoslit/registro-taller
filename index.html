@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#1a1209" />
+  <meta name="theme-color" content="#f9f7f1" />
   <meta name="description" content="Registro de piezas de joyería – uso personal offline" />
   <title>Joyería · Taller</title>
 
@@ -22,26 +22,26 @@
     %22short_name%22:%22Joyeria%22,
     %22start_url%22:%22.%22,
     %22display%22:%22standalone%22,
-    %22background_color%22:%22%231a1209%22,
-    %22theme_color%22:%22%231a1209%22
+    %22background_color%22:%22%23f9f7f1%22,
+    %22theme_color%22:%22%23f9f7f1%22
   }" />
 
   <style>
-    /* ─── TOKENS ──────────────────────────────────────────── */
+    /* ─── TOKENS — Oro Elegante (tema claro) ─────────────── */
     :root {
-      --gold:    #c9a84c;
-      --gold-lt: #e8c97a;
-      --gold-dk: #8a6b22;
-      --ink:     #1a1209;
-      --ink-2:   #2d2010;
-      --ink-3:   #3f3020;
-      --parch:   #f5efd8;
-      --parch-2: #ede4c8;
-      --text:    #f0e8d0;
-      --text-2:  #c8bfa0;
+      --gold:    #C9A227;   /* oro suave principal */
+      --gold-lt: #E2C65C;   /* oro claro / hover */
+      --gold-dk: #9e7c18;   /* oro oscuro / bordes activos */
+      --ink:     #f9f7f1;   /* fondo general crema */
+      --ink-2:   #ffffff;   /* fondo de tarjetas blanco */
+      --ink-3:   #f3efe6;   /* fondo de inputs crema suave */
+      --parch:   #1a1209;   /* superficies oscuras (invertido) */
+      --parch-2: #2d2010;
+      --text:    #2c2416;   /* texto principal oscuro cálido */
+      --text-2:  #7a6a50;   /* texto secundario marrón medio */
       --red:     #c0392b;
       --r: .75rem;
-      --shadow: 0 4px 24px rgba(0,0,0,.5);
+      --shadow: 0 2px 16px rgba(180,150,80,.13);
     }
 
     /* ─── RESET ───────────────────────────────────────────── */
@@ -58,10 +58,11 @@
     /* ─── TOPBAR ──────────────────────────────────────────── */
     header {
       position: sticky; top: 0; z-index: 100;
-      background: linear-gradient(180deg, var(--ink) 0%, var(--ink-2) 100%);
-      border-bottom: 1px solid var(--gold-dk);
+      background: #ffffff;
+      border-bottom: 2px solid var(--gold);
       padding: .9rem 1.2rem;
       display: flex; align-items: center; gap: .8rem;
+      box-shadow: 0 1px 8px rgba(180,150,80,.10);
     }
     header h1 {
       font-size: 1.15rem;
@@ -76,10 +77,11 @@
     /* ─── BOTTOM NAV ──────────────────────────────────────── */
     nav.bottom {
       position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
-      background: var(--ink-2);
-      border-top: 1px solid var(--gold-dk);
+      background: #ffffff;
+      border-top: 2px solid var(--gold);
       display: flex;
       padding-bottom: env(safe-area-inset-bottom);
+      box-shadow: 0 -1px 8px rgba(180,150,80,.10);
     }
     nav.bottom button {
       flex: 1; background: none; border: none; color: var(--text-2);
@@ -110,23 +112,24 @@
     }
     .piece-card {
       background: var(--ink-2);
-      border: 1px solid var(--ink-3);
+      border: 1px solid #e8e0cc;
       border-radius: var(--r);
       overflow: hidden;
       cursor: pointer;
-      transition: border-color .2s, transform .15s;
+      transition: border-color .2s, transform .15s, box-shadow .2s;
+      box-shadow: 0 1px 6px rgba(180,150,80,.08);
     }
-    .piece-card:hover { border-color: var(--gold-dk); transform: translateY(-2px); }
+    .piece-card:hover { border-color: var(--gold); transform: translateY(-2px); box-shadow: 0 4px 16px rgba(180,150,80,.18); }
     .piece-card .thumb {
       width: 100%; aspect-ratio: 1;
       background: var(--ink-3);
       display: flex; align-items: center; justify-content: center;
-      font-size: 2rem; color: var(--gold-dk);
+      font-size: 2rem; color: var(--gold);
       overflow: hidden;
     }
     .piece-card .thumb img { width: 100%; height: 100%; object-fit: cover; }
     .piece-card .info { padding: .6rem .7rem; }
-    .piece-card .info h3 { font-size: .85rem; font-weight: normal; color: var(--gold-lt); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .piece-card .info h3 { font-size: .85rem; font-weight: normal; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .piece-card .info p { font-size: .7rem; color: var(--text-2); margin-top: .15rem; }
 
     .empty-state {
@@ -138,34 +141,36 @@
     /* ─── FORM ────────────────────────────────────────────── */
     .form-card {
       background: var(--ink-2);
-      border: 1px solid var(--ink-3);
+      border: 1px solid #e8e0cc;
       border-radius: var(--r);
       padding: 1.2rem;
       margin-top: .5rem;
+      box-shadow: 0 1px 8px rgba(180,150,80,.08);
     }
     .field { margin-bottom: 1rem; }
     .field label {
       display: block; font-size: .72rem; letter-spacing: .08em;
-      text-transform: uppercase; color: var(--gold); margin-bottom: .35rem;
+      text-transform: uppercase; color: var(--gold-dk); margin-bottom: .35rem;
+      font-weight: bold;
     }
     .field input,
     .field select,
     .field textarea {
       width: 100%; background: var(--ink-3);
-      border: 1px solid #4a3820; border-radius: .4rem;
+      border: 1px solid #ddd3bb; border-radius: .4rem;
       color: var(--text); padding: .55rem .75rem;
       font-family: inherit; font-size: .9rem;
-      outline: none; transition: border-color .2s;
+      outline: none; transition: border-color .2s, box-shadow .2s;
     }
     .field input:focus,
     .field select:focus,
-    .field textarea:focus { border-color: var(--gold-dk); }
+    .field textarea:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(201,162,39,.12); }
     .field textarea { resize: vertical; min-height: 80px; }
-    .field select option { background: var(--ink-2); }
+    .field select option { background: #fff; color: var(--text); }
 
     /* ─── PHOTO UPLOAD ────────────────────────────────────── */
     .photo-drop {
-      border: 2px dashed var(--gold-dk);
+      border: 2px dashed #ddd3bb;
       border-radius: var(--r);
       padding: 1.5rem;
       text-align: center;
@@ -175,9 +180,9 @@
       transition: border-color .2s, background .2s;
     }
     .photo-drop:hover, .photo-drop.over {
-      border-color: var(--gold); background: rgba(201,168,76,.06);
+      border-color: var(--gold); background: rgba(201,162,39,.05);
     }
-    .photo-drop svg { width: 32px; margin-bottom: .5rem; color: var(--gold-dk); }
+    .photo-drop svg { width: 32px; margin-bottom: .5rem; color: var(--gold); }
     #photo-input { display: none; }
 
     .photo-previews {
@@ -207,28 +212,28 @@
     }
     .btn:active { transform: scale(.97); }
     .btn-primary {
-      background: linear-gradient(135deg, var(--gold-dk), var(--gold));
-      color: var(--ink);
+      background: linear-gradient(135deg, var(--gold-dk), var(--gold-lt));
+      color: #2c1f00;
     }
     .btn-danger { background: var(--red); color: #fff; }
-    .btn-ghost { background: var(--ink-3); color: var(--text-2); }
+    .btn-ghost { background: #f0ebe0; border: 1px solid #ddd3bb; color: var(--text-2); }
     .btn-sm { padding: .4rem .8rem; font-size: .78rem; }
     .btn-block { width: 100%; justify-content: center; }
 
     /* ─── DETAIL VIEW ─────────────────────────────────────── */
     .detail-header { margin-bottom: 1rem; }
     .detail-header .back-btn {
-      background: none; border: none; color: var(--gold);
+      background: none; border: none; color: var(--gold-dk);
       font-family: inherit; font-size: .85rem; cursor: pointer;
       display: flex; align-items: center; gap: .3rem; padding: 0;
       margin-bottom: .75rem;
     }
-    .detail-header h2 { font-size: 1.3rem; font-weight: normal; color: var(--gold-lt); }
+    .detail-header h2 { font-size: 1.3rem; font-weight: normal; color: var(--text); }
     .detail-meta { font-size: .78rem; color: var(--text-2); margin-top: .25rem; }
 
     .detail-notes {
-      background: var(--ink-2); border: 1px solid var(--ink-3);
-      border-radius: var(--r); padding: .9rem; margin: 1rem 0;
+      background: var(--ink-3); border: 1px solid #e8e0cc;
+      border-radius: var(--r); padding: .9rem; margin: .5rem 0;
       font-size: .88rem; color: var(--text); line-height: 1.6;
       white-space: pre-wrap;
     }
@@ -240,10 +245,10 @@
     }
     .gallery-item {
       aspect-ratio: 1; border-radius: .4rem; overflow: hidden;
-      cursor: pointer; border: 1px solid var(--ink-3);
-      transition: transform .15s;
+      cursor: pointer; border: 1px solid #e8e0cc;
+      transition: transform .15s, box-shadow .15s;
     }
-    .gallery-item:hover { transform: scale(1.02); }
+    .gallery-item:hover { transform: scale(1.02); box-shadow: 0 4px 12px rgba(180,150,80,.2); }
     .gallery-item img { width: 100%; height: 100%; object-fit: cover; }
 
     /* ─── LIGHTBOX ────────────────────────────────────────── */
@@ -260,26 +265,27 @@
     }
     #lightbox .close-lb {
       position: absolute; top: 1rem; right: 1rem;
-      background: var(--ink-2); border: 1px solid var(--gold-dk);
-      color: var(--gold); font-size: 1.2rem; width: 36px; height: 36px;
+      background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.3);
+      color: #fff; font-size: 1.2rem; width: 36px; height: 36px;
       border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;
     }
 
     /* ─── SECTION TITLE ───────────────────────────────────── */
     .section-title {
       font-size: .72rem; text-transform: uppercase; letter-spacing: .1em;
-      color: var(--gold); border-bottom: 1px solid var(--ink-3);
-      padding-bottom: .4rem; margin-bottom: .75rem;
+      color: var(--gold-dk); border-bottom: 1px solid #e8e0cc;
+      padding-bottom: .4rem; margin-bottom: .75rem; font-weight: bold;
     }
 
     /* ─── TOAST ───────────────────────────────────────────── */
     #toast {
       position: fixed; bottom: 5rem; left: 50%; transform: translateX(-50%) translateY(20px);
-      background: var(--ink-2); border: 1px solid var(--gold-dk);
-      color: var(--gold-lt); padding: .6rem 1.2rem;
+      background: var(--text); border: 1px solid var(--gold);
+      color: #fff; padding: .6rem 1.2rem;
       border-radius: 2rem; font-size: .82rem;
       opacity: 0; transition: opacity .3s, transform .3s;
       pointer-events: none; z-index: 300; white-space: nowrap;
+      box-shadow: 0 4px 16px rgba(0,0,0,.2);
     }
     #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
@@ -288,16 +294,17 @@
       display: flex; gap: .5rem; margin-top: .75rem;
     }
     .search-bar input {
-      flex: 1; background: var(--ink-2); border: 1px solid var(--ink-3);
+      flex: 1; background: #fff; border: 1px solid #ddd3bb;
       border-radius: .4rem; color: var(--text); padding: .5rem .8rem;
       font-family: inherit; font-size: .88rem; outline: none;
+      box-shadow: inset 0 1px 3px rgba(0,0,0,.06);
     }
-    .search-bar input:focus { border-color: var(--gold-dk); }
+    .search-bar input:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(201,162,39,.12); }
 
     .btn-pdf {
-      background: linear-gradient(135deg, #1a3a2a, #2d6e4e);
-      color: #a8e6c8;
-      border: 1px solid #2d6e4e;
+      background: linear-gradient(135deg, var(--gold-dk), var(--gold));
+      color: #2c1f00;
+      border: 1px solid var(--gold-dk);
     }
     .btn-pdf:disabled {
       opacity: .6; cursor: not-allowed;
@@ -327,32 +334,32 @@
     }
     .ley-chip label {
       display: inline-flex; align-items: center;
-      background: var(--ink-3); border: 1px solid #4a3820;
+      background: #f3efe6; border: 1px solid #ddd3bb;
       border-radius: 2rem; padding: .3rem .8rem;
       font-size: .78rem; color: var(--text-2);
       cursor: pointer; transition: all .15s;
       text-transform: none; margin: 0; letter-spacing: .03em;
     }
     .ley-chip input:checked + label {
-      background: rgba(201,168,76,.18);
+      background: rgba(201,162,39,.15);
       border-color: var(--gold);
-      color: var(--gold-lt);
+      color: var(--gold-dk);
     }
 
     /* ─── DETALLE: ID monospace ───────────────────────────── */
     .detail-id {
       display: inline-block; font-family: monospace;
-      background: var(--ink-3); color: var(--gold);
+      background: #f3efe6; color: var(--gold-dk);
       font-size: .78rem; padding: .15rem .5rem;
       border-radius: .3rem; letter-spacing: .08em;
-      margin-top: .4rem;
+      margin-top: .4rem; border: 1px solid #ddd3bb;
     }
 
     /* ─── DETALLE: Tabla datos técnicos ───────────────────── */
     .data-grid {
       display: grid; grid-template-columns: auto 1fr;
       gap: .4rem .9rem; margin: .5rem 0 1rem;
-      background: var(--ink-2); border: 1px solid var(--ink-3);
+      background: #faf8f2; border: 1px solid #e8e0cc;
       border-radius: var(--r); padding: .8rem 1rem;
     }
     .data-grid dt {
@@ -361,28 +368,29 @@
       align-self: center; white-space: nowrap;
     }
     .data-grid dd { font-size: .9rem; color: var(--text); }
-    .data-grid dd.hl { color: var(--gold-lt); }
+    .data-grid dd.hl { color: var(--gold-dk); font-weight: bold; }
 
     /* ─── CHIPS de ley en detalle ─────────────────────────── */
     .ley-tags { display: flex; flex-wrap: wrap; gap: .3rem; margin-top: .5rem; }
     .ley-tag {
-      background: rgba(201,168,76,.15); border: 1px solid var(--gold-dk);
-      color: var(--gold-lt); font-size: .75rem;
+      background: rgba(201,162,39,.12); border: 1px solid var(--gold);
+      color: var(--gold-dk); font-size: .75rem;
       padding: .2rem .65rem; border-radius: 2rem;
     }
     /* ─── VISTA AJUSTES ───────────────────────────────────── */
     .settings-card {
-      background: var(--ink-2); border: 1px solid var(--ink-3);
+      background: #fff; border: 1px solid #e8e0cc;
       border-radius: var(--r); overflow: hidden; margin-bottom: 1rem;
+      box-shadow: 0 1px 6px rgba(180,150,80,.08);
     }
     .settings-card h3 {
       font-size: .72rem; text-transform: uppercase; letter-spacing: .1em;
-      color: var(--gold); padding: .7rem 1rem;
-      border-bottom: 1px solid var(--ink-3); font-weight: normal;
+      color: var(--gold-dk); padding: .7rem 1rem;
+      border-bottom: 1px solid #e8e0cc; font-weight: bold; background: #faf8f2;
     }
     .settings-row {
       display: flex; align-items: center; gap: .8rem;
-      padding: .9rem 1rem; border-bottom: 1px solid var(--ink-3);
+      padding: .9rem 1rem; border-bottom: 1px solid #f0ebe0;
     }
     .settings-row:last-child { border-bottom: none; }
     .settings-row .icon {
@@ -397,7 +405,6 @@
     .settings-row .text { flex: 1; }
     .settings-row .text strong { display: block; font-size: .88rem; color: var(--text); font-weight: normal; }
     .settings-row .text small  { font-size: .73rem; color: var(--text-2); }
-    .settings-row .btn { flex-shrink: 0; }
 
     /* ─── MODAL CONFIRMACIÓN ──────────────────────────────── */
     #modal-overlay {
@@ -407,11 +414,11 @@
     }
     #modal-overlay.open { display: flex; }
     .modal {
-      background: var(--ink-2); border: 1px solid var(--gold-dk);
+      background: #fff; border: 1px solid #e8e0cc;
       border-radius: var(--r); padding: 1.4rem; width: 100%; max-width: 340px;
-      box-shadow: var(--shadow);
+      box-shadow: 0 8px 32px rgba(0,0,0,.15);
     }
-    .modal h3 { color: var(--gold-lt); font-size: 1rem; font-weight: normal; margin-bottom: .6rem; }
+    .modal h3 { color: var(--text); font-size: 1rem; font-weight: normal; margin-bottom: .6rem; }
     .modal p  { color: var(--text-2); font-size: .85rem; line-height: 1.5; margin-bottom: 1.1rem; }
     .modal .modal-actions { display: flex; gap: .6rem; justify-content: flex-end; }
 
@@ -424,6 +431,110 @@
       height: 100%; background: var(--gold);
       width: 0%; transition: width .2s;
     }
+    /* ─── TABS DEL FORMULARIO ─────────────────────────────── */
+    .form-tabs {
+      display: flex; gap: 0; margin-bottom: 1rem;
+      border-bottom: 2px solid #e8e0cc; overflow-x: auto;
+      scrollbar-width: none; background: #fff;
+      border-radius: var(--r) var(--r) 0 0;
+    }
+    .form-tabs::-webkit-scrollbar { display: none; }
+    .form-tab {
+      flex-shrink: 0; background: none; border: none;
+      color: var(--text-2); padding: .6rem .9rem;
+      font-family: inherit; font-size: .72rem;
+      letter-spacing: .07em; text-transform: uppercase;
+      cursor: pointer; border-bottom: 2px solid transparent;
+      margin-bottom: -2px; transition: color .2s, border-color .2s;
+    }
+    .form-tab.active { color: var(--gold-dk); border-bottom-color: var(--gold); font-weight: bold; }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ─── RADIO CHIPS (estado, acabado, resultado…) ────────── */
+    .radio-chips { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .35rem; }
+    .radio-chip { position: relative; }
+    .radio-chip input[type="radio"] { position: absolute; opacity: 0; width: 0; height: 0; }
+    .radio-chip label {
+      display: inline-flex; align-items: center;
+      background: #f3efe6; border: 1px solid #ddd3bb;
+      border-radius: 2rem; padding: .3rem .8rem;
+      font-size: .78rem; color: var(--text-2);
+      cursor: pointer; transition: all .15s;
+      text-transform: none; margin: 0;
+    }
+    .radio-chip input:checked + label {
+      background: rgba(201,162,39,.15);
+      border-color: var(--gold); color: var(--gold-dk);
+    }
+    /* Variantes de color para control de calidad */
+    .radio-chip.ok   input:checked + label { background: rgba(46,160,87,.15);  border-color: #3fb950; color: #3fb950; }
+    .radio-chip.warn input:checked + label { background: rgba(210,153,34,.15); border-color: #d29922; color: #d29922; }
+    .radio-chip.fail input:checked + label { background: rgba(248,81,73,.15);  border-color: #f85149; color: #f85149; }
+
+    /* ─── CHECKLIST DE PROCESO ────────────────────────────── */
+    .checklist { display: flex; flex-direction: column; gap: .3rem; margin-top: .35rem; }
+    .check-item { display: flex; align-items: center; gap: .6rem; }
+    .check-item input[type="checkbox"] {
+      width: 18px; height: 18px; accent-color: var(--gold);
+      cursor: pointer; flex-shrink: 0;
+    }
+    .check-item label {
+      font-size: .88rem; color: var(--text-2); cursor: pointer;
+      text-transform: none; letter-spacing: 0; margin: 0;
+    }
+    .check-item input:checked + label { color: var(--text); font-weight: 500; }
+
+    /* ─── COLLAPSIBLE SECTION ─────────────────────────────── */
+    .collapsible-header {
+      display: flex; align-items: center; justify-content: space-between;
+      cursor: pointer; user-select: none;
+    }
+    .collapsible-header svg { transition: transform .2s; }
+    .collapsible-header.open svg { transform: rotate(180deg); }
+    .collapsible-body { overflow: hidden; }
+
+    /* ─── BADGE DE ESTADO EN DETALLE ──────────────────────── */
+    .status-badge {
+      display: inline-flex; align-items: center; gap: .3rem;
+      padding: .2rem .7rem; border-radius: 2rem; font-size: .75rem;
+    }
+    .status-badge.aprobado   { background: rgba(46,160,87,.15);  border: 1px solid #3fb950; color: #3fb950; }
+    .status-badge.condicionado { background: rgba(210,153,34,.15); border: 1px solid #d29922; color: #d29922; }
+    .status-badge.rechazado  { background: rgba(248,81,73,.15);  border: 1px solid #f85149; color: #f85149; }
+    .status-badge.pendiente  { background: rgba(201,162,39,.08); border: 1px solid #ddd3bb; color: var(--text-2); }
+
+    /* ─── DETALLE: SECCIÓN COLAPSABLE ─────────────────────── */
+    .detail-section {
+      background: #fff; border: 1px solid #e8e0cc;
+      border-radius: var(--r); margin-bottom: .75rem; overflow: hidden;
+      box-shadow: 0 1px 4px rgba(180,150,80,.06);
+    }
+    .detail-section-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: .7rem 1rem; cursor: pointer; user-select: none;
+      background: #faf8f2;
+    }
+    .detail-section-header span {
+      font-size: .72rem; text-transform: uppercase;
+      letter-spacing: .1em; color: var(--gold-dk); font-weight: bold;
+    }
+    .detail-section-header svg { color: var(--text-2); transition: transform .2s; }
+    .detail-section-header.open svg { transform: rotate(180deg); }
+    .detail-section-body { padding: 0 1rem 1rem; }
+    .detail-row { display: flex; gap: .5rem; margin-bottom: .35rem; align-items: baseline; }
+    .detail-row dt { font-size: .7rem; text-transform: uppercase; letter-spacing: .07em; color: var(--text-2); min-width: 100px; flex-shrink: 0; }
+    .detail-row dd { font-size: .88rem; color: var(--text); }
+
+    /* Botón editar en cabecera detalle */
+    .btn-edit {
+      background: rgba(201,162,39,.10); border: 1px solid var(--gold);
+      color: var(--gold-dk); padding: .35rem .75rem; border-radius: .4rem;
+      font-size: .75rem; cursor: pointer; font-family: inherit;
+      display: inline-flex; align-items: center; gap: .3rem;
+      transition: background .2s;
+    }
+    .btn-edit:hover { background: rgba(201,162,39,.22); }
   </style>
 </head>
 <body>
@@ -444,99 +555,230 @@
     <div class="pieces-grid" id="pieces-grid"></div>
   </section>
 
-  <!-- NEW PIECE FORM VIEW -->
+  <!-- FORM VIEW (nueva pieza / edición) -->
   <section id="view-form" class="view">
-    <p class="section-title">Nueva Pieza</p>
+    <p class="section-title" id="form-title">Nueva Pieza</p>
+
+    <!-- Tabs de navegación entre secciones del formulario -->
+    <div class="form-tabs" role="tablist">
+      <button class="form-tab active" role="tab" data-tab="tab-basico">Básico</button>
+      <button class="form-tab" role="tab" data-tab="tab-cliente">Cliente</button>
+      <button class="form-tab" role="tab" data-tab="tab-evaluacion">Evaluación</button>
+      <button class="form-tab" role="tab" data-tab="tab-proceso">Proceso</button>
+      <button class="form-tab" role="tab" data-tab="tab-calidad">Calidad</button>
+    </div>
+
     <div class="form-card">
 
-      <!-- Identificación -->
-      <div class="field-row">
-        <div class="field">
-          <label for="f-ref">Referencia / ID *</label>
-          <input type="text" id="f-ref" placeholder="Ej: A-2025-001" maxlength="40" />
+      <!-- ══ TAB 1: DATOS BÁSICOS ══════════════════════════ -->
+      <div class="tab-panel active" id="tab-basico">
+        <div class="field-row">
+          <div class="field">
+            <label for="f-ref">Referencia / ID *</label>
+            <input type="text" id="f-ref" placeholder="A-2025-001" maxlength="40" />
+          </div>
+          <div class="field">
+            <label for="f-date">Fecha entrada</label>
+            <input type="date" id="f-date" />
+          </div>
         </div>
         <div class="field">
-          <label for="f-date">Fecha</label>
-          <input type="date" id="f-date" />
-        </div>
-      </div>
-
-      <div class="field">
-        <label for="f-name">Nombre de la pieza *</label>
-        <input type="text" id="f-name" placeholder="Ej: Anillo solitario…" maxlength="80" />
-      </div>
-
-      <div class="field">
-        <label for="f-type">Tipo</label>
-        <select id="f-type">
-          <option value="anillo">Anillo</option>
-          <option value="collar">Collar / Cadena</option>
-          <option value="pulsera">Pulsera</option>
-          <option value="pendiente">Pendiente / Arete</option>
-          <option value="broche">Broche</option>
-          <option value="otro">Otro</option>
-        </select>
-      </div>
-
-      <!-- Peso -->
-      <p class="section-title" style="margin-top:.2rem">Peso</p>
-      <div class="field-row">
-        <div class="field">
-          <label for="f-weight-before">Antes de reparación (g)</label>
-          <input type="number" id="f-weight-before" placeholder="0.00" step="0.01" min="0" />
+          <label for="f-name">Nombre de la pieza *</label>
+          <input type="text" id="f-name" placeholder="Ej: Anillo solitario…" maxlength="80" />
         </div>
         <div class="field">
-          <label for="f-weight-after">Después de reparación (g)</label>
-          <input type="number" id="f-weight-after" placeholder="0.00" step="0.01" min="0" />
+          <label for="f-type">Tipo</label>
+          <select id="f-type">
+            <option value="anillo">Anillo</option>
+            <option value="collar">Collar / Cadena</option>
+            <option value="pulsera">Pulsera</option>
+            <option value="pendiente">Pendiente / Arete</option>
+            <option value="broche">Broche</option>
+            <option value="otro">Otro</option>
+          </select>
         </div>
-      </div>
+        <p class="section-title">Peso</p>
+        <div class="field-row">
+          <div class="field">
+            <label for="f-weight-before">Antes (g)</label>
+            <input type="number" id="f-weight-before" placeholder="0.00" step="0.01" min="0" />
+          </div>
+          <div class="field">
+            <label for="f-weight-after">Después (g)</label>
+            <input type="number" id="f-weight-after" placeholder="0.00" step="0.01" min="0" />
+          </div>
+        </div>
+        <p class="section-title">Prueba de Ley</p>
+        <div class="ley-chips" role="group">
+          <div class="ley-chip"><input type="checkbox" id="ley-750"  value="750"><label for="ley-750">Au 750 (18k)</label></div>
+          <div class="ley-chip"><input type="checkbox" id="ley-585"  value="585"><label for="ley-585">Au 585 (14k)</label></div>
+          <div class="ley-chip"><input type="checkbox" id="ley-375"  value="375"><label for="ley-375">Au 375 (9k)</label></div>
+          <div class="ley-chip"><input type="checkbox" id="ley-999"  value="999"><label for="ley-999">Ag 999</label></div>
+          <div class="ley-chip"><input type="checkbox" id="ley-925"  value="925"><label for="ley-925">Ag 925</label></div>
+          <div class="ley-chip"><input type="checkbox" id="ley-800"  value="800"><label for="ley-800">Ag 800</label></div>
+          <div class="ley-chip"><input type="checkbox" id="ley-pt950" value="Pt950"><label for="ley-pt950">Pt 950</label></div>
+          <div class="ley-chip"><input type="checkbox" id="ley-pt900" value="Pt900"><label for="ley-pt900">Pt 900</label></div>
+          <div class="ley-chip"><input type="checkbox" id="ley-sc"   value="Sin contrastar"><label for="ley-sc">Sin contrastar</label></div>
+        </div>
+        <div class="field" style="margin-top:.6rem">
+          <label for="f-ley-custom">Otra ley / resultado personalizado</label>
+          <input type="text" id="f-ley-custom" placeholder="Chapado, Doublé, Cu…" maxlength="80" />
+        </div>
+        <p class="section-title">Notas generales</p>
+        <div class="field">
+          <textarea id="f-notes" placeholder="Material, observaciones generales…"></textarea>
+        </div>
+        <p class="section-title">Fotos</p>
+        <div class="photo-drop" id="photo-drop">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <rect x="3" y="3" width="18" height="18" rx="2"/>
+            <circle cx="8.5" cy="8.5" r="1.5"/>
+            <polyline points="21 15 16 10 5 21"/>
+          </svg>
+          <div>Toca para añadir fotos</div>
+          <small>JPG · PNG · WEBP</small>
+        </div>
+        <input type="file" id="photo-input" accept="image/*" multiple />
+        <div class="photo-previews" id="photo-previews"></div>
+      </div><!-- /tab-basico -->
 
-      <!-- Pruebas de ley -->
-      <p class="section-title">Prueba de Ley</p>
-      <div class="ley-chips" role="group" aria-label="Selecciona pruebas de ley">
-        <!-- Oro -->
-        <div class="ley-chip"><input type="checkbox" id="ley-750" value="750"><label for="ley-750">Au 750 (18k)</label></div>
-        <div class="ley-chip"><input type="checkbox" id="ley-585" value="585"><label for="ley-585">Au 585 (14k)</label></div>
-        <div class="ley-chip"><input type="checkbox" id="ley-375" value="375"><label for="ley-375">Au 375 (9k)</label></div>
-        <!-- Plata -->
-        <div class="ley-chip"><input type="checkbox" id="ley-999" value="999"><label for="ley-999">Ag 999</label></div>
-        <div class="ley-chip"><input type="checkbox" id="ley-925" value="925"><label for="ley-925">Ag 925</label></div>
-        <div class="ley-chip"><input type="checkbox" id="ley-800" value="800"><label for="ley-800">Ag 800</label></div>
-        <!-- Platino -->
-        <div class="ley-chip"><input type="checkbox" id="ley-pt950" value="Pt950"><label for="ley-pt950">Pt 950</label></div>
-        <div class="ley-chip"><input type="checkbox" id="ley-pt900" value="Pt900"><label for="ley-pt900">Pt 900</label></div>
-        <!-- Sin contrastar -->
-        <div class="ley-chip"><input type="checkbox" id="ley-sc" value="Sin contrastar"><label for="ley-sc">Sin contrastar</label></div>
-      </div>
-      <div class="field" style="margin-top:.6rem">
-        <label for="f-ley-custom">Otra ley / resultado personalizado</label>
-        <input type="text" id="f-ley-custom" placeholder="Ej: Chapado, Doublé, Cu…" maxlength="80" />
-      </div>
+      <!-- ══ TAB 2: DATOS DEL CLIENTE ══════════════════════ -->
+      <div class="tab-panel" id="tab-cliente">
+        <div class="field-row">
+          <div class="field">
+            <label for="f-cli-nombre">Nombre del cliente</label>
+            <input type="text" id="f-cli-nombre" placeholder="Nombre o alias…" maxlength="60" />
+          </div>
+          <div class="field">
+            <label for="f-cli-tel">Teléfono</label>
+            <input type="tel" id="f-cli-tel" placeholder="+34 600 000 000" maxlength="20" />
+          </div>
+        </div>
+        <div class="field">
+          <label>Motivo del encargo</label>
+          <div class="radio-chips">
+            <div class="radio-chip"><input type="radio" name="cli-motivo" id="mot-reparacion" value="reparacion"><label for="mot-reparacion">Reparación</label></div>
+            <div class="radio-chip"><input type="radio" name="cli-motivo" id="mot-ajuste"    value="ajuste"   ><label for="mot-ajuste">Ajuste de talla</label></div>
+            <div class="radio-chip"><input type="radio" name="cli-motivo" id="mot-limpieza"  value="limpieza" ><label for="mot-limpieza">Limpieza</label></div>
+            <div class="radio-chip"><input type="radio" name="cli-motivo" id="mot-nuevo"     value="nuevo"    ><label for="mot-nuevo">Pieza nueva</label></div>
+            <div class="radio-chip"><input type="radio" name="cli-motivo" id="mot-otro"      value="otro"     ><label for="mot-otro">Otro</label></div>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="f-cli-entrada">Fecha de entrada</label>
+            <input type="date" id="f-cli-entrada" />
+          </div>
+          <div class="field">
+            <label for="f-cli-entrega">Fecha de entrega est.</label>
+            <input type="date" id="f-cli-entrega" />
+          </div>
+        </div>
+        <div class="field">
+          <label for="f-cli-descripcion">Descripción del encargo / solicitud del cliente</label>
+          <textarea id="f-cli-descripcion" placeholder="Qué quiere el cliente, referencias, detalles específicos…"></textarea>
+        </div>
+        <div class="field">
+          <label for="f-cli-notas">Observaciones del cliente</label>
+          <textarea id="f-cli-notas" placeholder="Alergias a metales, preferencias, urgencia…"></textarea>
+        </div>
+      </div><!-- /tab-cliente -->
 
-      <!-- Notas -->
-      <p class="section-title">Notas</p>
-      <div class="field">
-        <textarea id="f-notes" placeholder="Material, técnica, cliente, observaciones…"></textarea>
-      </div>
+      <!-- ══ TAB 3: EVALUACIÓN INICIAL ══════════════════════ -->
+      <div class="tab-panel" id="tab-evaluacion">
+        <div class="field">
+          <label>Estado general de la pieza</label>
+          <div class="radio-chips">
+            <div class="radio-chip ok">  <input type="radio" name="eval-estado" id="est-bueno"   value="bueno">  <label for="est-bueno">Bueno</label></div>
+            <div class="radio-chip warn"><input type="radio" name="eval-estado" id="est-regular"  value="regular"><label for="est-regular">Regular</label></div>
+            <div class="radio-chip fail"><input type="radio" name="eval-estado" id="est-malo"     value="malo">   <label for="est-malo">Malo</label></div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Acabado superficial</label>
+          <div class="radio-chips">
+            <div class="radio-chip"><input type="radio" name="eval-acabado" id="acab-brillante" value="brillante"><label for="acab-brillante">Brillante</label></div>
+            <div class="radio-chip"><input type="radio" name="eval-acabado" id="acab-mate"      value="mate">     <label for="acab-mate">Mate</label></div>
+            <div class="radio-chip"><input type="radio" name="eval-acabado" id="acab-satinado"  value="satinado"> <label for="acab-satinado">Satinado</label></div>
+            <div class="radio-chip"><input type="radio" name="eval-acabado" id="acab-oxidado"   value="oxidado">  <label for="acab-oxidado">Oxidado</label></div>
+            <div class="radio-chip"><input type="radio" name="eval-acabado" id="acab-otro"      value="otro">     <label for="acab-otro">Otro</label></div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Daños / defectos detectados</label>
+          <div class="checklist">
+            <div class="check-item"><input type="checkbox" id="ev-roturas"  ><label for="ev-roturas">Roturas o grietas</label></div>
+            <div class="check-item"><input type="checkbox" id="ev-desgaste" ><label for="ev-desgaste">Desgaste excesivo</label></div>
+            <div class="check-item"><input type="checkbox" id="ev-piedras"  ><label for="ev-piedras">Piedras flojas o faltantes</label></div>
+            <div class="check-item"><input type="checkbox" id="ev-cierre"   ><label for="ev-cierre">Cierre dañado</label></div>
+            <div class="check-item"><input type="checkbox" id="ev-soldadura"><label for="ev-soldadura">Soldaduras anteriores visibles</label></div>
+            <div class="check-item"><input type="checkbox" id="ev-deformada"><label for="ev-deformada">Pieza deformada</label></div>
+          </div>
+        </div>
+        <div class="field">
+          <label for="f-eval-notas">Observaciones de la evaluación</label>
+          <textarea id="f-eval-notas" placeholder="Descripción detallada del estado, dimensiones, materiales identificados…"></textarea>
+        </div>
+      </div><!-- /tab-evaluacion -->
 
-      <p class="section-title">Fotos</p>
-      <div class="photo-drop" id="photo-drop">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <rect x="3" y="3" width="18" height="18" rx="2"/>
-          <circle cx="8.5" cy="8.5" r="1.5"/>
-          <polyline points="21 15 16 10 5 21"/>
-        </svg>
-        <div>Toca para añadir fotos</div>
-        <small>JPG · PNG · WEBP</small>
-      </div>
-      <input type="file" id="photo-input" accept="image/*" multiple />
-      <div class="photo-previews" id="photo-previews"></div>
+      <!-- ══ TAB 4: CHECKLIST PROCESO ══════════════════════ -->
+      <div class="tab-panel" id="tab-proceso">
+        <div class="field">
+          <label>Pasos realizados</label>
+          <div class="checklist">
+            <div class="check-item"><input type="checkbox" id="pr-desmontaje" ><label for="pr-desmontaje">Desmontaje</label></div>
+            <div class="check-item"><input type="checkbox" id="pr-limpieza"   ><label for="pr-limpieza">Limpieza ultrasónica / química</label></div>
+            <div class="check-item"><input type="checkbox" id="pr-soldadura"  ><label for="pr-soldadura">Soldadura</label></div>
+            <div class="check-item"><input type="checkbox" id="pr-conformado" ><label for="pr-conformado">Conformado / reshaping</label></div>
+            <div class="check-item"><input type="checkbox" id="pr-engaste"    ><label for="pr-engaste">Engaste de piedras</label></div>
+            <div class="check-item"><input type="checkbox" id="pr-pulido"     ><label for="pr-pulido">Pulido</label></div>
+            <div class="check-item"><input type="checkbox" id="pr-rhodiado"   ><label for="pr-rhodiado">Rhodiado / baño</label></div>
+            <div class="check-item"><input type="checkbox" id="pr-montaje"    ><label for="pr-montaje">Montaje final</label></div>
+          </div>
+        </div>
+        <div class="field">
+          <label for="f-proc-tecnica">Técnica / materiales usados</label>
+          <input type="text" id="f-proc-tecnica" placeholder="Ej: soldadura plata 935, piedra circonita 3mm redonda…" maxlength="120" />
+        </div>
+        <div class="field">
+          <label for="f-proc-notas">Notas del proceso</label>
+          <textarea id="f-proc-notas" placeholder="Incidencias, dificultades, decisiones técnicas tomadas…"></textarea>
+        </div>
+      </div><!-- /tab-proceso -->
 
-      <div style="display:flex;gap:.6rem;margin-top:1.2rem">
+      <!-- ══ TAB 5: CONTROL DE CALIDAD ══════════════════════ -->
+      <div class="tab-panel" id="tab-calidad">
+        <div class="field">
+          <label>Verificaciones finales</label>
+          <div class="checklist">
+            <div class="check-item"><input type="checkbox" id="cal-peso"    ><label for="cal-peso">Peso verificado y registrado</label></div>
+            <div class="check-item"><input type="checkbox" id="cal-acabado" ><label for="cal-acabado">Acabado superficial correcto</label></div>
+            <div class="check-item"><input type="checkbox" id="cal-cierre"  ><label for="cal-cierre">Cierre / sistema de anclaje ok</label></div>
+            <div class="check-item"><input type="checkbox" id="cal-piedras" ><label for="cal-piedras">Piedras fijas y sin daños</label></div>
+            <div class="check-item"><input type="checkbox" id="cal-limpieza"><label for="cal-limpieza">Limpieza final realizada</label></div>
+            <div class="check-item"><input type="checkbox" id="cal-foto"    ><label for="cal-foto">Fotos finales tomadas</label></div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Resultado del control de calidad</label>
+          <div class="radio-chips">
+            <div class="radio-chip ok">  <input type="radio" name="cal-resultado" id="cal-aprobado"    value="aprobado">   <label for="cal-aprobado">✓ Aprobado</label></div>
+            <div class="radio-chip warn"><input type="radio" name="cal-resultado" id="cal-condicionado" value="condicionado"><label for="cal-condicionado">⚠ Condicionado</label></div>
+            <div class="radio-chip fail"><input type="radio" name="cal-resultado" id="cal-rechazado"   value="rechazado">  <label for="cal-rechazado">✕ Rechazado</label></div>
+          </div>
+        </div>
+        <div class="field">
+          <label for="f-cal-notas">Observaciones del control de calidad</label>
+          <textarea id="f-cal-notas" placeholder="Motivo de condicionado o rechazo, acciones correctivas…"></textarea>
+        </div>
+      </div><!-- /tab-calidad -->
+
+      <!-- Botones siempre visibles al fondo -->
+      <div style="display:flex;gap:.6rem;margin-top:1.4rem;padding-top:1rem;border-top:1px solid var(--ink-3)">
         <button class="btn btn-ghost" id="btn-cancel">Cancelar</button>
         <button class="btn btn-primary btn-block" id="btn-save">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-          Guardar pieza
+          <span id="btn-save-label">Guardar pieza</span>
         </button>
       </div>
     </div>
@@ -549,23 +791,92 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
         Volver
       </button>
-      <h2 id="d-name"></h2>
-      <p class="detail-meta" id="d-meta"></p>
-      <code class="detail-id" id="d-ref"></code>
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:.5rem">
+        <div>
+          <h2 id="d-name"></h2>
+          <p class="detail-meta" id="d-meta"></p>
+          <code class="detail-id" id="d-ref"></code>
+        </div>
+        <button class="btn-edit" id="btn-edit">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Editar
+        </button>
+      </div>
+      <div style="margin-top:.5rem" id="d-calidad-badge"></div>
     </div>
 
-    <p class="section-title">Datos técnicos</p>
-    <dl class="data-grid" id="d-data-grid">
-      <!-- rellenado por JS -->
-    </dl>
+    <!-- Datos técnicos -->
+    <div class="detail-section">
+      <div class="detail-section-header open" data-target="ds-basico">
+        <span>Datos técnicos</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg>
+      </div>
+      <div class="detail-section-body" id="ds-basico">
+        <dl id="d-data-grid"></dl>
+        <div style="margin-top:.5rem">
+          <dt style="font-size:.7rem;text-transform:uppercase;letter-spacing:.07em;color:var(--text-2)">Prueba de Ley</dt>
+          <div class="ley-tags" id="d-ley-tags" style="margin-top:.3rem">—</div>
+        </div>
+      </div>
+    </div>
 
-    <p class="section-title">Prueba de Ley</p>
-    <div class="ley-tags" id="d-ley-tags">—</div>
+    <!-- Cliente -->
+    <div class="detail-section">
+      <div class="detail-section-header" data-target="ds-cliente">
+        <span>Cliente</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg>
+      </div>
+      <div class="detail-section-body" id="ds-cliente" style="display:none">
+        <div id="d-cliente-content"></div>
+      </div>
+    </div>
 
-    <p class="section-title" style="margin-top:1rem">Notas</p>
-    <div class="detail-notes" id="d-notes">—</div>
+    <!-- Evaluación inicial -->
+    <div class="detail-section">
+      <div class="detail-section-header" data-target="ds-eval">
+        <span>Evaluación inicial</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg>
+      </div>
+      <div class="detail-section-body" id="ds-eval" style="display:none">
+        <div id="d-eval-content"></div>
+      </div>
+    </div>
 
-    <p class="section-title">Galería <span class="badge" id="d-photo-count">0</span></p>
+    <!-- Proceso -->
+    <div class="detail-section">
+      <div class="detail-section-header" data-target="ds-proceso">
+        <span>Proceso</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg>
+      </div>
+      <div class="detail-section-body" id="ds-proceso" style="display:none">
+        <div id="d-proceso-content"></div>
+      </div>
+    </div>
+
+    <!-- Control de calidad -->
+    <div class="detail-section">
+      <div class="detail-section-header" data-target="ds-calidad">
+        <span>Control de calidad</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg>
+      </div>
+      <div class="detail-section-body" id="ds-calidad" style="display:none">
+        <div id="d-calidad-content"></div>
+      </div>
+    </div>
+
+    <!-- Notas generales -->
+    <div class="detail-section">
+      <div class="detail-section-header" data-target="ds-notas">
+        <span>Notas generales</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg>
+      </div>
+      <div class="detail-section-body" id="ds-notas" style="display:none">
+        <div class="detail-notes" id="d-notes">—</div>
+      </div>
+    </div>
+
+    <!-- Galería -->
+    <p class="section-title" style="margin-top:.5rem">Galería <span class="badge" id="d-photo-count">0</span></p>
     <div class="gallery" id="d-gallery"></div>
 
     <div style="display:flex;gap:.6rem;margin-top:1.5rem;flex-wrap:wrap">
@@ -910,10 +1221,117 @@ function showToast(msg, duration = 2200) {
 /* ─────────────────────────────────────────────────────────────
    ESTADO DE LA APLICACIÓN
 ───────────────────────────────────────────────────────────── */
-let db;           // instancia IndexedDB
-let allPieces = []; // caché local de piezas
-let pendingPhotos = []; // fotos pendientes antes de guardar (File[])
-let currentPieceId = null; // pieza abierta en detalle
+let db;
+let allPieces    = [];
+let pendingPhotos = [];
+let currentPieceId = null;
+let editingPieceId = null;   // ← null = nueva pieza, string = editando
+
+/* ─────────────────────────────────────────────────────────────
+   TABS DEL FORMULARIO
+───────────────────────────────────────────────────────────── */
+function switchTab(tabId) {
+  document.querySelectorAll('.form-tab').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tab === tabId);
+  });
+  document.querySelectorAll('.tab-panel').forEach(panel => {
+    panel.classList.toggle('active', panel.id === tabId);
+  });
+}
+
+/* ─────────────────────────────────────────────────────────────
+   SECCIONES COLAPSABLES DEL DETALLE
+───────────────────────────────────────────────────────────── */
+function initCollapsibles() {
+  document.querySelectorAll('.detail-section-header').forEach(header => {
+    header.addEventListener('click', () => {
+      const targetId = header.dataset.target;
+      const body     = document.getElementById(targetId);
+      const isOpen   = header.classList.contains('open');
+      header.classList.toggle('open', !isOpen);
+      body.style.display = isOpen ? 'none' : 'block';
+    });
+  });
+}
+
+/* ─────────────────────────────────────────────────────────────
+   CARGAR PIEZA EN EL FORMULARIO (para edición)
+───────────────────────────────────────────────────────────── */
+function loadPieceIntoForm(piece) {
+  editingPieceId = piece.id;
+  document.getElementById('form-title').textContent    = 'Editar Pieza';
+  document.getElementById('btn-save-label').textContent = 'Guardar cambios';
+
+  // Básico
+  document.getElementById('f-ref').value           = piece.ref           ?? '';
+  document.getElementById('f-name').value          = piece.name          ?? '';
+  document.getElementById('f-type').value          = piece.type          ?? 'anillo';
+  document.getElementById('f-date').value          = piece.date          ?? '';
+  document.getElementById('f-weight-before').value = piece.weightBefore  ?? '';
+  document.getElementById('f-weight-after').value  = piece.weightAfter   ?? '';
+  document.getElementById('f-notes').value         = piece.notes         ?? '';
+
+  // Ley — checkboxes predefinidos
+  const leyArr = piece.ley ?? [];
+  const knownVals = ['750','585','375','999','925','800','Pt950','Pt900','Sin contrastar'];
+  document.querySelectorAll('.ley-chip input').forEach(cb => {
+    cb.checked = leyArr.includes(cb.value);
+  });
+  // Ley custom: lo que no sea un valor conocido
+  const custom = leyArr.filter(v => !knownVals.includes(v)).join(', ');
+  document.getElementById('f-ley-custom').value = custom;
+
+  // Cliente
+  const cli = piece.cliente ?? {};
+  document.getElementById('f-cli-nombre').value      = cli.nombre      ?? '';
+  document.getElementById('f-cli-tel').value         = cli.telefono    ?? '';
+  document.getElementById('f-cli-entrada').value     = cli.fechaEntrada ?? '';
+  document.getElementById('f-cli-entrega').value     = cli.fechaEntrega ?? '';
+  document.getElementById('f-cli-descripcion').value = cli.descripcion  ?? '';
+  document.getElementById('f-cli-notas').value       = cli.notas        ?? '';
+  if (cli.motivo) {
+    const r = document.querySelector(`input[name="cli-motivo"][value="${cli.motivo}"]`);
+    if (r) r.checked = true;
+  }
+
+  // Evaluación
+  const ev = piece.evaluacion ?? {};
+  if (ev.estado)  { const r = document.querySelector(`input[name="eval-estado"][value="${ev.estado}"]`);  if (r) r.checked = true; }
+  if (ev.acabado) { const r = document.querySelector(`input[name="eval-acabado"][value="${ev.acabado}"]`); if (r) r.checked = true; }
+  Object.entries(ev.danos ?? {}).forEach(([id, val]) => {
+    const el = document.getElementById(id);
+    if (el) el.checked = val;
+  });
+  document.getElementById('f-eval-notas').value = ev.notas ?? '';
+
+  // Proceso
+  const pr = piece.proceso ?? {};
+  Object.entries(pr.steps ?? {}).forEach(([id, val]) => {
+    const el = document.getElementById(id);
+    if (el) el.checked = val;
+  });
+  document.getElementById('f-proc-tecnica').value = pr.tecnica ?? '';
+  document.getElementById('f-proc-notas').value   = pr.notas   ?? '';
+
+  // Calidad
+  const cal = piece.calidad ?? {};
+  Object.entries(cal.checks ?? {}).forEach(([id, val]) => {
+    const el = document.getElementById(id);
+    if (el) el.checked = val;
+  });
+  if (cal.resultado) {
+    const r = document.querySelector(`input[name="cal-resultado"][value="${cal.resultado}"]`);
+    if (r) r.checked = true;
+  }
+  document.getElementById('f-cal-notas').value = cal.notas ?? '';
+
+  // Las fotos existentes NO se precargan en pendingPhotos
+  // (se mantienen en DB y solo se añaden las nuevas)
+  document.getElementById('photo-previews').innerHTML = '';
+  pendingPhotos = [];
+
+  switchTab('tab-basico');
+}
 
 /* ─────────────────────────────────────────────────────────────
    VISTA: LISTA DE PIEZAS
@@ -974,48 +1392,106 @@ async function openDetail(pieceId) {
   const piece  = await getPiece(db, pieceId);
   const photos = await getPhotos(db, pieceId);
 
+  // Cabecera
   document.getElementById('d-name').textContent = piece.name;
   document.getElementById('d-meta').textContent =
     `${TYPE_LABELS[piece.type] ?? piece.type}  ·  ${formatDate(piece.date)}`;
-  document.getElementById('d-ref').textContent = piece.ref ?? '—';
-  document.getElementById('d-notes').textContent = piece.notes || '(Sin notas)';
-  document.getElementById('d-photo-count').textContent = photos.length;
+  document.getElementById('d-ref').textContent  = piece.ref ?? '—';
 
-  /* ── Tabla de datos técnicos ── */
-  const grid = document.getElementById('d-data-grid');
-  const fmt  = (v, unit = 'g') =>
-    v != null && v !== '' ? `${parseFloat(v).toFixed(2)} ${unit}` : '—';
-  const diff = (a, b) => {
-    if (a == null || b == null || a === '' || b === '') return null;
-    return (parseFloat(b) - parseFloat(a)).toFixed(2);
-  };
-
-  const weightDiff = diff(piece.weightBefore, piece.weightAfter);
-  const diffLabel  = weightDiff != null
-    ? `<span class="hl">${weightDiff > 0 ? '+' : ''}${weightDiff} g</span>`
-    : '—';
-
-  grid.innerHTML = `
-    <dt>Peso inicial</dt>   <dd>${fmt(piece.weightBefore)}</dd>
-    <dt>Peso final</dt>     <dd>${fmt(piece.weightAfter)}</dd>
-    <dt>Diferencia</dt>     <dd>${diffLabel}</dd>
-  `;
-
-  /* ── Pruebas de ley ── */
-  const leyContainer = document.getElementById('d-ley-tags');
-  const leyList = piece.ley ?? [];
-  if (leyList.length === 0) {
-    leyContainer.innerHTML = '<span style="color:var(--text-2);font-size:.82rem">No registrada</span>';
+  // Badge de resultado de calidad
+  const resultado = piece.calidad?.resultado;
+  const badgeEl   = document.getElementById('d-calidad-badge');
+  if (resultado) {
+    const labels = { aprobado: '✓ Aprobado', condicionado: '⚠ Condicionado', rechazado: '✕ Rechazado' };
+    badgeEl.innerHTML = `<span class="status-badge ${resultado}">${labels[resultado] ?? resultado}</span>`;
   } else {
-    leyContainer.innerHTML = leyList
-      .map(l => `<span class="ley-tag">${l}</span>`)
-      .join('');
+    badgeEl.innerHTML = `<span class="status-badge pendiente">Control de calidad pendiente</span>`;
   }
 
-  /* ── Galería ── */
+  // ── Datos técnicos ──
+  const fmt  = v => (v != null && v !== '') ? `${parseFloat(v).toFixed(2)} g` : '—';
+  const diff = (a, b) => {
+    if (a == null || b == null || a === '' || b === '') return '—';
+    const d = (parseFloat(b) - parseFloat(a)).toFixed(2);
+    return `${d > 0 ? '+' : ''}${d} g`;
+  };
+  document.getElementById('d-data-grid').innerHTML = `
+    <div class="detail-row"><dt>Peso inicial</dt><dd>${fmt(piece.weightBefore)}</dd></div>
+    <div class="detail-row"><dt>Peso final</dt><dd>${fmt(piece.weightAfter)}</dd></div>
+    <div class="detail-row"><dt>Diferencia</dt><dd>${diff(piece.weightBefore, piece.weightAfter)}</dd></div>
+  `;
+
+  // Ley
+  const leyList = piece.ley ?? [];
+  document.getElementById('d-ley-tags').innerHTML = leyList.length
+    ? leyList.map(l => `<span class="ley-tag">${l}</span>`).join('')
+    : '<span style="color:var(--text-2);font-size:.82rem">No registrada</span>';
+
+  // ── Cliente ──
+  const cli = piece.cliente ?? {};
+  const MOTIVOS = { reparacion:'Reparación', ajuste:'Ajuste de talla', limpieza:'Limpieza', nuevo:'Pieza nueva', otro:'Otro' };
+  document.getElementById('d-cliente-content').innerHTML = `
+    <div class="detail-row"><dt>Nombre</dt>   <dd>${cli.nombre    || '—'}</dd></div>
+    <div class="detail-row"><dt>Teléfono</dt> <dd>${cli.telefono  || '—'}</dd></div>
+    <div class="detail-row"><dt>Motivo</dt>   <dd>${MOTIVOS[cli.motivo] ?? cli.motivo ?? '—'}</dd></div>
+    <div class="detail-row"><dt>Entrada</dt>  <dd>${formatDate(cli.fechaEntrada)}</dd></div>
+    <div class="detail-row"><dt>Entrega est.</dt><dd>${formatDate(cli.fechaEntrega)}</dd></div>
+    ${cli.descripcion ? `<div class="detail-row"><dt>Descripción</dt><dd>${cli.descripcion}</dd></div>` : ''}
+    ${cli.notas       ? `<div class="detail-row"><dt>Observaciones</dt><dd>${cli.notas}</dd></div>` : ''}
+  `;
+
+  // ── Evaluación ──
+  const ev = piece.evaluacion ?? {};
+  const ESTADOS  = { bueno:'Bueno', regular:'Regular', malo:'Malo' };
+  const ACABADOS = { brillante:'Brillante', mate:'Mate', satinado:'Satinado', oxidado:'Oxidado', otro:'Otro' };
+  const DANO_LABELS = {
+    'ev-roturas':'Roturas / grietas','ev-desgaste':'Desgaste excesivo',
+    'ev-piedras':'Piedras flojas','ev-cierre':'Cierre dañado',
+    'ev-soldadura':'Soldaduras previas','ev-deformada':'Deformada',
+  };
+  const danosActivos = Object.entries(ev.danos ?? {}).filter(([,v])=>v).map(([k])=>DANO_LABELS[k]??k);
+  document.getElementById('d-eval-content').innerHTML = `
+    <div class="detail-row"><dt>Estado</dt>   <dd>${ESTADOS[ev.estado]   ?? '—'}</dd></div>
+    <div class="detail-row"><dt>Acabado</dt>  <dd>${ACABADOS[ev.acabado] ?? '—'}</dd></div>
+    <div class="detail-row"><dt>Daños</dt>    <dd>${danosActivos.length ? danosActivos.join(', ') : 'Ninguno detectado'}</dd></div>
+    ${ev.notas ? `<div class="detail-row"><dt>Notas</dt><dd>${ev.notas}</dd></div>` : ''}
+  `;
+
+  // ── Proceso ──
+  const pr = piece.proceso ?? {};
+  const STEP_LABELS = {
+    'pr-desmontaje':'Desmontaje','pr-limpieza':'Limpieza','pr-soldadura':'Soldadura',
+    'pr-conformado':'Conformado','pr-engaste':'Engaste','pr-pulido':'Pulido',
+    'pr-rhodiado':'Rhodiado','pr-montaje':'Montaje',
+  };
+  const stepsHechos = Object.entries(pr.steps ?? {}).filter(([,v])=>v).map(([k])=>STEP_LABELS[k]??k);
+  document.getElementById('d-proceso-content').innerHTML = `
+    <div class="detail-row"><dt>Pasos</dt>    <dd>${stepsHechos.length ? stepsHechos.join(' · ') : '—'}</dd></div>
+    ${pr.tecnica ? `<div class="detail-row"><dt>Técnica</dt><dd>${pr.tecnica}</dd></div>` : ''}
+    ${pr.notas   ? `<div class="detail-row"><dt>Notas</dt>  <dd>${pr.notas}</dd></div>`   : ''}
+  `;
+
+  // ── Calidad ──
+  const cal = piece.calidad ?? {};
+  const CAL_LABELS = {
+    'cal-peso':'Peso verificado','cal-acabado':'Acabado ok','cal-cierre':'Cierre ok',
+    'cal-piedras':'Piedras ok','cal-limpieza':'Limpieza final','cal-foto':'Fotos tomadas',
+  };
+  const calOk   = Object.entries(cal.checks ?? {}).filter(([,v])=>v).map(([k])=>CAL_LABELS[k]??k);
+  const calFail = Object.entries(cal.checks ?? {}).filter(([,v])=>!v).map(([k])=>CAL_LABELS[k]??k);
+  document.getElementById('d-calidad-content').innerHTML = `
+    <div class="detail-row"><dt>Superados</dt>  <dd>${calOk.length   ? calOk.join(', ')   : '—'}</dd></div>
+    <div class="detail-row"><dt>Pendientes</dt> <dd>${calFail.length ? calFail.join(', ') : '—'}</dd></div>
+    ${cal.notas ? `<div class="detail-row"><dt>Notas</dt><dd>${cal.notas}</dd></div>` : ''}
+  `;
+
+  // ── Notas generales ──
+  document.getElementById('d-notes').textContent = piece.notes || '(Sin notas)';
+
+  // ── Galería ──
+  document.getElementById('d-photo-count').textContent = photos.length;
   const gallery = document.getElementById('d-gallery');
   gallery.innerHTML = '';
-
   if (photos.length === 0) {
     gallery.innerHTML = `<p style="color:var(--text-2);font-size:.82rem">Sin fotos adjuntas.</p>`;
   } else {
@@ -1077,41 +1553,94 @@ async function handleSave() {
   if (!name) { showToast('⚠️ El nombre es obligatorio'); return; }
   if (!ref)  { showToast('⚠️ La referencia es obligatoria'); return; }
 
-  // Recoger checkboxes de ley marcados
-  const leyChecked = [...document.querySelectorAll('.ley-chip input:checked')]
-    .map(cb => cb.value);
-  const leyCustom = document.getElementById('f-ley-custom').value.trim();
+  // Ley
+  const leyChecked = [...document.querySelectorAll('.ley-chip input:checked')].map(cb => cb.value);
+  const leyCustom  = document.getElementById('f-ley-custom').value.trim();
   if (leyCustom) leyChecked.push(leyCustom);
 
-  const piece = {
-    name,
-    ref,
-    type:          document.getElementById('f-type').value,
-    date:          document.getElementById('f-date').value,
-    weightBefore:  document.getElementById('f-weight-before').value || null,
-    weightAfter:   document.getElementById('f-weight-after').value  || null,
-    ley:           leyChecked,   // array de strings
-    notes:         document.getElementById('f-notes').value.trim(),
+  // Helper para leer radio buttons
+  const radioVal = (name) => {
+    const el = document.querySelector(`input[name="${name}"]:checked`);
+    return el ? el.value : null;
   };
+
+  // Helper para leer checkboxes en grupo
+  const checkVals = (ids) => {
+    const result = {};
+    ids.forEach(id => { result[id] = document.getElementById(id)?.checked ?? false; });
+    return result;
+  };
+
+  const piece = {
+    // ─ Básico ─
+    name, ref,
+    type:         document.getElementById('f-type').value,
+    date:         document.getElementById('f-date').value,
+    weightBefore: document.getElementById('f-weight-before').value || null,
+    weightAfter:  document.getElementById('f-weight-after').value  || null,
+    ley:          leyChecked,
+    notes:        document.getElementById('f-notes').value.trim(),
+
+    // ─ Cliente ─
+    cliente: {
+      nombre:      document.getElementById('f-cli-nombre').value.trim(),
+      telefono:    document.getElementById('f-cli-tel').value.trim(),
+      motivo:      radioVal('cli-motivo'),
+      fechaEntrada:document.getElementById('f-cli-entrada').value,
+      fechaEntrega:document.getElementById('f-cli-entrega').value,
+      descripcion: document.getElementById('f-cli-descripcion').value.trim(),
+      notas:       document.getElementById('f-cli-notas').value.trim(),
+    },
+
+    // ─ Evaluación ─
+    evaluacion: {
+      estado:   radioVal('eval-estado'),
+      acabado:  radioVal('eval-acabado'),
+      danos:    checkVals(['ev-roturas','ev-desgaste','ev-piedras','ev-cierre','ev-soldadura','ev-deformada']),
+      notas:    document.getElementById('f-eval-notas').value.trim(),
+    },
+
+    // ─ Proceso ─
+    proceso: {
+      steps:   checkVals(['pr-desmontaje','pr-limpieza','pr-soldadura','pr-conformado','pr-engaste','pr-pulido','pr-rhodiado','pr-montaje']),
+      tecnica: document.getElementById('f-proc-tecnica').value.trim(),
+      notas:   document.getElementById('f-proc-notas').value.trim(),
+    },
+
+    // ─ Calidad ─
+    calidad: {
+      checks:    checkVals(['cal-peso','cal-acabado','cal-cierre','cal-piedras','cal-limpieza','cal-foto']),
+      resultado: radioVal('cal-resultado'),
+      notas:     document.getElementById('f-cal-notas').value.trim(),
+    },
+  };
+
+  // Si editando, preservar el id original
+  if (editingPieceId) piece.id = editingPieceId;
 
   const saved = await savePiece(db, piece);
 
-  // Guardar fotos pendientes en orden
+  // Fotos: solo añadir las nuevas pendientes (no reemplazar las existentes)
   const validPhotos = pendingPhotos.filter(Boolean);
+  const existingPhotos = await getPhotos(db, saved.id);
   for (let i = 0; i < validPhotos.length; i++) {
     const blob = await fileToBlob(validPhotos[i]);
-    await savePhoto(db, saved.id, blob, i);
+    await savePhoto(db, saved.id, blob, existingPhotos.length + i);
   }
 
-  // Refrescar lista y volver
   allPieces = await getPieces(db);
-  showToast('✓ Pieza guardada');
+  showToast(editingPieceId ? '✓ Pieza actualizada' : '✓ Pieza guardada');
   resetForm();
   await renderList();
   App.showView('list');
 }
 
 function resetForm() {
+  editingPieceId = null;
+  document.getElementById('form-title').textContent   = 'Nueva Pieza';
+  document.getElementById('btn-save-label').textContent = 'Guardar pieza';
+
+  // Básico
   document.getElementById('f-ref').value           = '';
   document.getElementById('f-name').value          = '';
   document.getElementById('f-type').value          = 'anillo';
@@ -1123,6 +1652,31 @@ function resetForm() {
   document.getElementById('f-notes').value         = '';
   document.getElementById('photo-previews').innerHTML = '';
   pendingPhotos = [];
+
+  // Cliente
+  document.getElementById('f-cli-nombre').value      = '';
+  document.getElementById('f-cli-tel').value         = '';
+  document.getElementById('f-cli-entrada').value     = '';
+  document.getElementById('f-cli-entrega').value     = '';
+  document.getElementById('f-cli-descripcion').value = '';
+  document.getElementById('f-cli-notas').value       = '';
+
+  // Evaluación
+  document.getElementById('f-eval-notas').value = '';
+
+  // Proceso
+  document.getElementById('f-proc-tecnica').value = '';
+  document.getElementById('f-proc-notas').value   = '';
+
+  // Calidad
+  document.getElementById('f-cal-notas').value = '';
+
+  // Todos los radios y checkboxes
+  document.querySelectorAll('#view-form input[type="radio"]').forEach(r => r.checked = false);
+  document.querySelectorAll('#view-form input[type="checkbox"]').forEach(c => c.checked = false);
+
+  // Resetear tabs al primero
+  switchTab('tab-basico');
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -1159,11 +1713,11 @@ async function exportPDF() {
 
     /* ── Paleta de colores (r,g,b en 0-1) ── */
     const C = {
-      gold:    rgb(0.788, 0.659, 0.298),  // #c9a84c
-      ink:     rgb(0.102, 0.063, 0.035),  // #1a1009
-      darkGray:rgb(0.25,  0.19,  0.13),
-      midGray: rgb(0.55,  0.47,  0.38),
-      lightBg: rgb(0.965, 0.937, 0.847),  // #f5efd8
+      gold:    rgb(0.788, 0.635, 0.153),  // #C9A227 oro suave
+      ink:     rgb(0.173, 0.141, 0.086),  // #2c2416 texto oscuro
+      darkGray:rgb(0.62,  0.52,  0.31),
+      midGray: rgb(0.48,  0.42,  0.31),
+      lightBg: rgb(0.976, 0.969, 0.945),  // #f9f7f1 fondo crema
       white:   rgb(1, 1, 1),
       black:   rgb(0, 0, 0),
     };
@@ -1312,7 +1866,7 @@ async function exportPDF() {
     page.drawRectangle({
       x: M - 6, y: y - (meta.length * rowH) - 4,
       width: contentW + 12, height: meta.length * rowH + 14,
-      color: rgb(0.93, 0.90, 0.82),
+      color: rgb(0.973, 0.961, 0.918),
     });
     page.drawLine({
       start: { x: M - 6, y: y + 10 },
@@ -1420,7 +1974,7 @@ async function exportPDF() {
         page.drawRectangle({
           x: xPos + 3, y: yPos - 3,
           width: drawW, height: drawH,
-          color: rgb(0.7, 0.65, 0.55), opacity: 0.35,
+          color: rgb(0.75, 0.68, 0.52), opacity: 0.35,
         });
 
         /* Imagen */
@@ -1723,8 +2277,22 @@ async function init() {
   // Fecha por defecto en el formulario
   document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
 
-  /* ── Eventos del formulario ── */
-  // Drop zone
+  /* ── Tabs del formulario ── */
+  document.querySelectorAll('.form-tab').forEach(btn => {
+    btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+  });
+
+  /* ── Secciones colapsables del detalle ── */
+  initCollapsibles();
+
+  /* ── Botón editar ── */
+  document.getElementById('btn-edit').addEventListener('click', async () => {
+    const piece = await getPiece(db, currentPieceId);
+    loadPieceIntoForm(piece);
+    App.showView('form');
+  });
+
+  /* ── Drop zone fotos ── */
   const dropZone = document.getElementById('photo-drop');
   const fileInput = document.getElementById('photo-input');
 
